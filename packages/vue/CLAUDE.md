@@ -5,6 +5,24 @@
 [![npm version](https://badge.fury.io/js/%40btc-connect%2Fvue.svg)](https://badge.fury.io/js/%40btc-connect%2Fvue)
 [![Vue 3](https://img.shields.io/badge/Vue-3.x-4FC08D?style=flat&logo=vue.js)](https://vuejs.org/)
 
+## 变更记录 (Changelog)
+
+### 2025-11-04 22:00:00 - 🚀 v0.5.0 代码质量与功能完善
+- **版本升级**: 包版本从 v0.4.1 升级到 v0.5.0
+- **代码质量优化**: 修复所有Lint错误，优化代码规范
+- **主题检测增强**: 新增themeDetection.ts工具，支持智能主题切换
+- **Composable优化**: 完善所有Composable的类型定义和实现
+- **构建优化**: 优化Vite配置，提升构建性能
+- **类型安全**: 完善TypeScript类型定义，确保100%类型检查通过
+- **模块重构**: 优化模块结构，提升代码可维护性
+
+### 2025-10-31 22:00:00 - 🎉 Vue 模块重大架构优化
+- **统一API**: 与React包实现完全一致的Hook接口
+- **Composable增强**: useWallet成为统一访问点，集成所有功能
+- **主题系统**: 完善的主题管理，支持亮色/暗色/自动模式
+- **组件优化**: ConnectButton和WalletModal组件功能增强
+- **类型系统**: 新增完整的TypeScript类型定义
+
 ## 🎯 快速开始
 
 ### 安装

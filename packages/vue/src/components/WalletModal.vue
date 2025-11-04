@@ -100,6 +100,7 @@ interface Props {
   style?: Record<string, any>;
   isOpen?: boolean;
   wallets?: any[];
+  theme?: 'light' | 'dark' | 'auto';
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -108,6 +109,7 @@ const props = withDefaults(defineProps<Props>(), {
   style: () => ({}),
   isOpen: false,
   wallets: () => [],
+  theme: 'auto',
 });
 
 // Emits

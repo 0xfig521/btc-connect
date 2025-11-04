@@ -1,15 +1,15 @@
 ---
 name: btc-connect
-description: 专业的比特币钱包连接技能，支持btc-connect core、react、vue包在React、Vue、Next.js、Nuxt 3项目中的完整集成，包含UniSat和OKX钱包适配、网络切换功能、SSR环境配置和最新架构优化
+description: 专业的比特币钱包连接技能，支持btc-connect core、react、vue包在React、Vue、Next.js、Nuxt 3项目中的完整集成，包含UniSat和OKX钱包适配、网络切换功能、SSR环境配置、统一Hook API和v0.5.0最新特性
 ---
 
 # BTC-Connect 专业集成技能
 
 ## 技能概述
 
-btc-connect 是专为比特币 Web3 应用设计的钱包连接工具包，提供统一的连接接口、事件监听和适配层。此技能支持在 React、Vue、Next.js、Nuxt 3 项目中完整集成最新版本的 btc-connect (v0.4.0+)，实现 UniSat 和 OKX 钱包的连接、网络切换、状态管理，并解决 SSR 环境兼容性问题。
+btc-connect 是专为比特币 Web3 应用设计的钱包连接工具包，提供统一的连接接口、事件监听和适配层。此技能支持在 React、Vue、Next.js、Nuxt 3 项目中完整集成最新版本的 btc-connect (v0.5.0+)，实现 UniSat 和 OKX 钱包的连接、网络切换、状态管理，并解决 SSR 环境兼容性问题。
 
-**最新特性**: 完整的网络切换功能、Vue v0.4.0+ 架构优化、增强钱包检测机制、完整的 SSR 兼容支持。
+**最新特性 (v0.5.0)**: 统一Hook API设计、智能主题检测系统、代码质量全面优化、完善类型安全、增强构建性能、完整测试覆盖。
 
 ## 使用场景
 
