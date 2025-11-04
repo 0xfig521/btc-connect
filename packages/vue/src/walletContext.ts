@@ -21,7 +21,6 @@ export interface WalletContext {
   isConnected: ComputedRef<boolean>;
   isConnecting: ComputedRef<boolean>;
   isModalOpen: Ref<boolean>;
-  theme: ComputedRef<'light' | 'dark' | 'auto'>;
 
   // 钱包检测管理器
   detectionManager: Ref<WalletDetectionManager | null>;
@@ -55,14 +54,9 @@ let globalContext: WalletContext | null = null;
 // 创建钱包上下文
 // createWalletContext 不再对外导出，只保留一个 useWalletContext
 // 移除此函数的导出以简化 API，仅保留内部实现供插件使用
-function createWalletContext(
-  initialTheme: 'light' | 'dark' | 'auto' = 'light',
-): WalletContext {
+function createWalletContext(): WalletContext {
   // SSR 保护：只在客户端初始化 manager
   const manager = ref<BTCWalletManager | null>(null);
-
-  // 主题
-  const theme = ref<'light' | 'dark' | 'auto'>(initialTheme);
 
   // 模态框状态
   const isModalOpen = ref(false);
@@ -278,7 +272,6 @@ function createWalletContext(
     isConnected,
     isConnecting,
     isModalOpen,
-    theme: computed(() => theme.value),
 
     // 钱包检测管理器
     detectionManager: detectionManager as Ref<WalletDetectionManager | null>,
@@ -322,7 +315,7 @@ export function useWalletContext(): WalletContext {
   }
 
   if (!globalContext) {
-    globalContext = createWalletContext('light'); // 默认主题
+    globalContext = createWalletContext();
   }
 
   // 确保上下文是响应式的
@@ -376,7 +369,6 @@ function createEmptyContext(): WalletContext {
     isConnected: computed(() => false),
     isConnecting: computed(() => false),
     isModalOpen: ref(false),
-    theme: computed(() => 'light' as 'light' | 'dark'),
 
     // 钱包检测管理器
     detectionManager: ref(null),
@@ -407,7 +399,6 @@ function createEmptyContext(): WalletContext {
 export interface BTCWalletPluginOptions {
   autoConnect?: boolean;
   connectTimeout?: number;
-  theme?: 'light' | 'dark' | 'auto';
   // modal配置
   modalConfig?: ModalConfig;
   // 钱包管理器配置
@@ -425,13 +416,12 @@ export const BTCWalletPlugin = {
     const {
       autoConnect = true,
       connectTimeout = 5000,
-      theme = 'light',
       modalConfig,
       config,
     } = options;
 
-    // 创建钱包上下文时传入主题
-    const context = createWalletContext(theme);
+    // 创建钱包上下文
+    const context = createWalletContext();
 
     // 立即 provide，不等待 window 对象
     app.provide(BTC_WALLET_CONTEXT_KEY, context);

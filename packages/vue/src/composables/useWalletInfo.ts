@@ -8,6 +8,5 @@ export function useWalletInfo() {
     currentWallet: ctx.currentWallet,
     availableWallets: ctx.availableWallets,
     hasWallets: computed(() => ctx.availableWallets.value.length > 0),
-    theme: ctx.theme,
   };
 }

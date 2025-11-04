@@ -110,6 +110,7 @@ import { useCore } from '../composables/useCore';
 import { useConfig } from '../config';
 import { useBalance } from '../composables/useBalance';
 import { formatAddressShort, formatBTCBalance } from '../utils';
+import { getCurrentTheme, isDarkMode } from '../utils/themeDetection';
 import { isClient } from '../index';
 import WalletModal from './WalletModal.vue';
 
@@ -150,10 +151,50 @@ const copiedTimer = ref<NodeJS.Timeout | null>(null);
 const containerRef = ref<HTMLElement>();
 const dropdownRef = ref<HTMLElement>();
 
-// Computed
-const computedTheme = computed(() => {
-  return props.theme || config.getThemeConfig().mode;
+// 使用 TailwindCSS 兼容的主题检测
+const currentTheme = ref<'light' | 'dark'>(getCurrentTheme());
+
+// 监听主题变化
+onMounted(() => {
+  if (isClient) {
+    let observer: MutationObserver | null = null;
+
+    const checkTheme = () => {
+      const newTheme = isDarkMode() ? 'dark' : 'light';
+      if (currentTheme.value !== newTheme) {
+        currentTheme.value = newTheme;
+      }
+    };
+
+    // 创建 MutationObserver 监听 HTML class 变化
+    observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          checkTheme();
+        }
+      });
+    });
+
+    // 开始监听 HTML 元素的 class 变化
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    // 初始检查
+    checkTheme();
+
+    onUnmounted(() => {
+      if (observer) {
+        observer.disconnect();
+        observer = null;
+      }
+    });
+  }
 });
+
+// Computed
+const computedTheme = computed(() => currentTheme.value);
 
 // Methods
 const getButtonStyles = () => {

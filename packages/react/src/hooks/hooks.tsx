@@ -60,7 +60,6 @@ export function useWallet() {
     isConnected,
     isConnecting,
     disconnect,
-    theme,
     connect,
     switchWallet,
     availableWallets,
@@ -190,7 +189,6 @@ export function useWallet() {
     currentWallet,
     isConnected,
     isConnecting,
-    theme,
     address,
     balance,
     publicKey,
@@ -459,13 +457,12 @@ export function useConnectionStatus() {
  * 使用钱包信息的Hook - 新增
  */
 export function useWalletInfo() {
-  const { currentWallet, availableWallets, theme } = useWalletContext();
+  const { currentWallet, availableWallets } = useWalletContext();
 
   return {
     currentWallet,
     availableWallets,
     hasWallets: availableWallets.length > 0,
-    theme,
   };
 }
 

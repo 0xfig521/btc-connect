@@ -524,7 +524,7 @@ onMounted(() => {
   const { manager } = useCore()
 
   if (manager.value) {
-    manager.value.on('connect', (params) => {
+    manager.value.on('connect', (params: any) => {
       addLog(`钱包已连接，账户数量: ${params.accounts.length}`)
     })
 
@@ -532,11 +532,11 @@ onMounted(() => {
       addLog('钱包已断开连接')
     })
 
-    manager.value.on('accountChange', (params) => {
+    manager.value.on('accountChange', (params: any) => {
       addLog(`账户已变更，新账户数量: ${params.accounts.length}`)
     })
 
-    manager.value.on('networkChange', (params) => {
+    manager.value.on('networkChange', (params: any) => {
       addLog(`网络已切换到: ${params.network}`)
     })
   }

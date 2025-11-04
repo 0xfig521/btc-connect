@@ -3,7 +3,8 @@
  */
 
 // 设置 DOM 环境
-import { TextDecoder, TextEncoder } from 'util';
+import { TextDecoder, TextEncoder } from 'node:util';
+
 global.TextDecoder = TextDecoder as any;
 global.TextEncoder = TextEncoder as any;
 
@@ -16,15 +17,11 @@ global.HTMLElement = dom.window.HTMLElement;
 global.Element = dom.window.Element;
 global.Node = dom.window.Node;
 
-import React from 'react';
-import { beforeEach, describe, expect, it, vi } from 'bun:test';
+import { beforeEach, describe, expect, it } from 'bun:test';
 import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import {
-  BTCWalletProvider,
-  formatAddress,
-  formatBalance
-} from '../index';
+import React from 'react';
+import { BTCWalletProvider, formatAddress, formatBalance } from '../index';
 
 describe('BTCWalletProvider', () => {
   it('应该渲染子组件', () => {
@@ -119,7 +116,7 @@ describe('基础React功能', () => {
         const [loading, setLoading] = React.useState(false);
         return { loading, setLoading };
       },
-      { wrapper }
+      { wrapper },
     );
 
     expect(result.current.loading).toBe(false);
@@ -139,9 +136,12 @@ describe('错误处理', () => {
     );
 
     expect(() => {
-      renderHook(() => {
-        throw new Error('Test error');
-      }, { wrapper });
+      renderHook(
+        () => {
+          throw new Error('Test error');
+        },
+        { wrapper },
+      );
     }).toThrow('Test error');
   });
 });

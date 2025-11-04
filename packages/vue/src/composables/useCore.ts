@@ -177,9 +177,6 @@ export function useCore(): UseCoreReturn {
     currentWallet: ctx.currentWallet,
     availableWallets: ctx.availableWallets,
 
-    // 主题
-    theme: ctx.theme,
-
     // 操作方法（增强错误处理）
     connect,
     disconnect,

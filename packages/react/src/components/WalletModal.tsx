@@ -1,8 +1,9 @@
 import { getAllAdapters } from '@btc-connect/core';
 import * as React from 'react';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useConnectWallet, useWallet, useWalletModal } from '../context';
+import { useConnectWallet, useWalletModal } from '../context';
+import { getCurrentTheme, isDarkMode } from '../utils/themeDetection';
 
 // CSS样式 - 使用合理的z-index值
 const styles = `
@@ -279,8 +280,54 @@ export const WalletModal: React.FC<WalletModalProps> = ({
 }) => {
   const { availableWallets, connect } = useConnectWallet();
   const { isModalOpen, closeModal } = useWalletModal();
-  const { theme } = useWallet();
   const backdropRef = useRef<HTMLDivElement>(null);
+
+  // 使用 TailwindCSS 兼容的主题检测
+  const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>(() =>
+    getCurrentTheme(),
+  );
+
+  // 监听主题变化
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    let observer: MutationObserver | null = null;
+
+    const checkTheme = () => {
+      const newTheme = isDarkMode() ? 'dark' : 'light';
+      if (currentTheme !== newTheme) {
+        setCurrentTheme(newTheme);
+      }
+    };
+
+    // 创建 MutationObserver 监听 HTML class 变化
+    observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (
+          mutation.type === 'attributes' &&
+          mutation.attributeName === 'class'
+        ) {
+          checkTheme();
+        }
+      });
+    });
+
+    // 开始监听 HTML 元素的 class 变化
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+
+    // 初始检查
+    checkTheme();
+
+    return () => {
+      if (observer) {
+        observer.disconnect();
+        observer = null;
+      }
+    };
+  }, [currentTheme]);
 
   // 获取钱包描述
   const getWalletDescription = useCallback((walletId: string): string => {
@@ -405,7 +452,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({
       tabIndex={-1}
     >
       <div
-        className={`btc-modal-container theme-${theme} ${className}`}
+        className={`btc-modal-container theme-${currentTheme} ${className}`}
         style={style}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
@@ -417,10 +464,10 @@ export const WalletModal: React.FC<WalletModalProps> = ({
         }}
       >
         {/* 模态框头部 */}
-        <div className={`btc-modal-header theme-${theme}`}>
+        <div className={`btc-modal-header theme-${currentTheme}`}>
           <h2 className="btc-modal-title">{title}</h2>
           <button
-            className={`btc-modal-close theme-${theme}`}
+            className={`btc-modal-close theme-${currentTheme}`}
             onClick={closeModal}
             aria-label="Close modal"
           >
@@ -432,13 +479,16 @@ export const WalletModal: React.FC<WalletModalProps> = ({
         <div className="btc-modal-content">
           <ul className="btc-wallet-list">
             {walletInfos.map((wallet) => (
-              <li key={wallet.id} className={`btc-wallet-item theme-${theme}`}>
+              <li
+                key={wallet.id}
+                className={`btc-wallet-item theme-${currentTheme}`}
+              >
                 <button
                   className="btc-wallet-button"
                   onClick={() => handleWalletSelect(wallet)}
                 >
                   {/* 钱包图标 */}
-                  <div className={`btc-wallet-icon theme-${theme}`}>
+                  <div className={`btc-wallet-icon theme-${currentTheme}`}>
                     {wallet.icon.startsWith('http') ? (
                       <img src={wallet.icon} alt={wallet.name} />
                     ) : (
@@ -452,7 +502,9 @@ export const WalletModal: React.FC<WalletModalProps> = ({
                       {wallet.name}
                       {wallet.recommended && ' ⭐'}
                     </h3>
-                    <p className={`btc-wallet-description theme-${theme}`}>
+                    <p
+                      className={`btc-wallet-description theme-${currentTheme}`}
+                    >
                       {wallet.description}
                     </p>
                   </div>
@@ -470,8 +522,8 @@ export const WalletModal: React.FC<WalletModalProps> = ({
         </div>
 
         {/* 模态框底部 */}
-        <div className={`btc-modal-footer theme-${theme}`}>
-          <p className={`btc-disclaimer theme-${theme}`}>
+        <div className={`btc-modal-footer theme-${currentTheme}`}>
+          <p className={`btc-disclaimer theme-${currentTheme}`}>
             By connecting a wallet, you agree to the Terms of Service and
             Privacy Policy
           </p>

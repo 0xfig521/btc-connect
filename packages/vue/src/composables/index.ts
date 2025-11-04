@@ -25,7 +25,6 @@ export { useWalletModal } from './useWalletModal';
 // useDebounce, useThrottle, usePerformanceMonitor, useMemoryMonitor, useNetworkDetector - 性能优化功能
 // 这些功能保留为内部使用，不再对外导出
 
-export { useTheme, useThemeAdvanced } from './useTheme'; // 主题管理
 // 统一 Composables
 export { useWalletEvent } from './useWalletEvent'; // 事件监听
 export { useWalletManager, useWalletManagerAdvanced } from './useWalletManager'; // 访问当前 adapter

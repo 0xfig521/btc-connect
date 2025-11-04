@@ -12,7 +12,6 @@ export {
 } from './hooks';
 // 功能 Hooks
 export { useSignature } from './useSignature';
-export { useTheme } from './useTheme';
 export { useTransactions } from './useTransactions';
 export { useWalletDetection } from './useWalletDetection';
 // 新增 Hooks

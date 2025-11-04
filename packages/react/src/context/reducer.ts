@@ -15,7 +15,6 @@ export type WalletAction =
   | { type: 'SET_CONNECTING'; payload: boolean }
   | { type: 'SET_POLICY_RUNNING'; payload: boolean }
   | { type: 'SET_MODAL_OPEN'; payload: boolean }
-  | { type: 'SET_THEME'; payload: 'light' | 'dark' }
   | {
       type: 'UPDATE_ACCOUNT_INFO';
       payload: { publicKey?: string; balance?: BalanceDetail };
@@ -36,7 +35,6 @@ export interface WalletReducerState {
   isConnecting: boolean;
   isPolicyRunning: boolean;
   isModalOpen: boolean;
-  theme: 'light' | 'dark';
 
   // 错误状态
   error: Error | undefined;
@@ -54,7 +52,6 @@ export const initialState: WalletReducerState = {
   isConnecting: false,
   isPolicyRunning: false,
   isModalOpen: false,
-  theme: 'light',
   error: undefined,
 };
 
@@ -105,12 +102,6 @@ export function walletReducer(
       return {
         ...state,
         isModalOpen: action.payload,
-      };
-
-    case 'SET_THEME':
-      return {
-        ...state,
-        theme: action.payload,
       };
 
     case 'UPDATE_ACCOUNT_INFO':
@@ -206,11 +197,6 @@ export const walletActionCreators = {
   setModalOpen: (open: boolean): WalletAction => ({
     type: 'SET_MODAL_OPEN',
     payload: open,
-  }),
-
-  setTheme: (theme: 'light' | 'dark'): WalletAction => ({
-    type: 'SET_THEME',
-    payload: theme,
   }),
 
   updateAccountInfo: (info: {

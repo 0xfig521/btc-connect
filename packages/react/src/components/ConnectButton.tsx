@@ -2,6 +2,7 @@ import type * as React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useWallet, useWalletModal } from '../context';
 import { formatAddressShort, formatBTCBalance } from '../utils';
+import { getCurrentTheme, isDarkMode } from '../utils/themeDetection';
 
 // CSS样式
 const styles = `
@@ -262,14 +263,62 @@ export const ConnectButton: React.FC<ConnectButtonProps> = ({
   className = '',
   style,
 }) => {
-  const { currentAccount, balance, isConnected, disconnect, theme } =
-    useWallet();
+  const { currentAccount, balance, isConnected, disconnect } = useWallet();
   const { openModal } = useWalletModal();
+
+  // 使用 TailwindCSS 兼容的主题检测
+  const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>(() =>
+    getCurrentTheme(),
+  );
+
+  // 状态
   const [showDropdown, setShowDropdown] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copiedTimer, setCopiedTimer] = useState<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // 监听主题变化
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    let observer: MutationObserver | null = null;
+
+    const checkTheme = () => {
+      const newTheme = isDarkMode() ? 'dark' : 'light';
+      if (currentTheme !== newTheme) {
+        setCurrentTheme(newTheme);
+      }
+    };
+
+    // 创建 MutationObserver 监听 HTML class 变化
+    observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (
+          mutation.type === 'attributes' &&
+          mutation.attributeName === 'class'
+        ) {
+          checkTheme();
+        }
+      });
+    });
+
+    // 开始监听 HTML 元素的 class 变化
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+
+    // 初始检查
+    checkTheme();
+
+    return () => {
+      if (observer) {
+        observer.disconnect();
+        observer = null;
+      }
+    };
+  }, [currentTheme]);
 
   // 注入样式
   useEffect(() => {
@@ -419,7 +468,7 @@ export const ConnectButton: React.FC<ConnectButtonProps> = ({
       // biome-ignore lint/a11y/useSemanticElements: 我们使用 div 而不是 button 来避免按钮嵌套问题
       <div
         ref={containerRef}
-        className={`btc-connected-status theme-${theme}`}
+        className={`btc-connected-status theme-${currentTheme}`}
         style={getButtonStyles()}
         onClick={handleToggleDropdown}
         role="button"
@@ -439,7 +488,7 @@ export const ConnectButton: React.FC<ConnectButtonProps> = ({
         </div>
 
         <button
-          className={`btc-address-section theme-${theme}`}
+          className={`btc-address-section theme-${currentTheme}`}
           onClick={handleAddressClick}
           title={currentAccount.address}
           type="button"
@@ -455,7 +504,10 @@ export const ConnectButton: React.FC<ConnectButtonProps> = ({
         </button>
 
         {showDropdown && (
-          <div ref={dropdownRef} className={`btc-dropdown theme-${theme}`}>
+          <div
+            ref={dropdownRef}
+            className={`btc-dropdown theme-${currentTheme}`}
+          >
             <button className="btc-dropdown-item" onClick={handleDisconnect}>
               Disconnect
             </button>
@@ -467,7 +519,7 @@ export const ConnectButton: React.FC<ConnectButtonProps> = ({
 
   return (
     <button
-      className={`btc-connect-button theme-${theme} ${className}`}
+      className={`btc-connect-button theme-${currentTheme} ${className}`}
       style={getButtonStyles()}
       onClick={handleConnect}
       disabled={disabled}

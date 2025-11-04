@@ -144,8 +144,6 @@ export interface UseCoreReturn {
   currentWallet: ComputedRef<WalletInfo | null>;
   /** 可用钱包列表 */
   availableWallets: Ref<WalletInfo[]>;
-  /** 主题模式 */
-  theme: ComputedRef<ThemeMode>;
 
   // 操作方法
   /** 连接钱包 */
@@ -212,8 +210,6 @@ export interface UseNetworkReturn {
 export interface UseWalletModalReturn {
   /** 是否打开 */
   isOpen: Ref<boolean>;
-  /** 主题模式 */
-  theme: ComputedRef<ThemeMode>;
   /** 当前选择的钱包ID */
   currentWalletId: Ref<string | null>;
   /** 模态框打开来源 */
@@ -324,10 +320,6 @@ export interface VueWalletContext extends WalletContext {
 export interface BTCWalletPluginOptions {
   /** 是否自动连接 */
   autoConnect?: boolean;
-  /** 连接超时时间 */
-  connectTimeout?: number;
-  /** 主题模式 */
-  theme?: ThemeMode;
   /** 模态框配置 */
   modalConfig?: WalletManagerConfig['modalConfig'];
   /** 钱包管理器配置 */

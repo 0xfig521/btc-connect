@@ -40,7 +40,6 @@ export {
   useWalletInfo, // 钱包信息
   useWalletModal, // 保持：增强模态框控制
 } from './composables';
-export { useTheme, useThemeAdvanced } from './composables/useTheme'; // 新增：主题管理
 // 统一 Composables
 export { useWalletEvent } from './composables/useWalletEvent'; // 新增：事件监听
 export {

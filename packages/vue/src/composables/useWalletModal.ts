@@ -118,7 +118,6 @@ export function useWalletModal(source?: string): UseWalletModalReturn {
 
   return {
     isOpen,
-    theme: ctx.theme,
     open,
     close,
     toggle,

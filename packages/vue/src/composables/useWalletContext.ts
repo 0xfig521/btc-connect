@@ -102,7 +102,6 @@ function createSafeFallbackContext(): WalletContext {
     isConnected: computed(() => false),
     isConnecting: computed(() => false),
     isModalOpen: ref(false),
-    theme: computed(() => 'light' as const),
 
     connect: async () => {
       throw new Error('Wallet plugin not installed');

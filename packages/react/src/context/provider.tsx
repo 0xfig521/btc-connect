@@ -35,9 +35,6 @@ export interface WalletContextType {
   // 模态框状态
   isModalOpen: boolean;
 
-  // 主题
-  theme: 'light' | 'dark';
-
   // 操作
   connect: (walletId: string) => Promise<AccountInfo[]>;
   disconnect: () => Promise<void>;
@@ -61,7 +58,6 @@ interface WalletProviderProps {
   autoConnect?: boolean;
   connectTimeout?: number;
   connectionPolicy?: ConnectionPolicy;
-  theme?: 'light' | 'dark';
   // modal配置
   modalConfig?: import('../types').ModalConfig;
 }
@@ -75,14 +71,10 @@ export function BTCWalletProvider({
   autoConnect = false,
   connectTimeout = 5000,
   connectionPolicy,
-  theme = 'light',
   modalConfig,
 }: WalletProviderProps) {
   // 使用 useReducer 管理状态
-  const [state, dispatch] = useReducer(walletReducer, {
-    ...initialState,
-    theme,
-  });
+  const [state, dispatch] = useReducer(walletReducer, initialState);
 
   // SSR 保护：只在客户端初始化 manager
   const initManager = useCallback(() => {
@@ -98,11 +90,6 @@ export function BTCWalletProvider({
 
     return new BTCWalletManager(finalConfig);
   }, [config, modalConfig]);
-
-  // 响应主题 prop 变化
-  useEffect(() => {
-    dispatch(walletActionCreators.setTheme(theme));
-  }, [theme]);
 
   // 延迟初始化 manager
   useLayoutEffect(() => {
@@ -549,7 +536,6 @@ export function BTCWalletProvider({
     isConnected,
     isConnecting: isConnectingState,
     isModalOpen: state.isModalOpen,
-    theme: state.theme,
     connect,
     disconnect,
     switchWallet,

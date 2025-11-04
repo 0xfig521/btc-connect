@@ -1,7 +1,6 @@
 import type { EventHandler, WalletEvent } from '@btc-connect/core';
 import { computed } from 'vue';
 import { useWalletContext } from '../walletContext';
-import { useTheme } from './useTheme';
 import { useWalletEvent } from './useWalletEvent';
 import { useWalletManager } from './useWalletManager';
 
@@ -18,7 +17,7 @@ import { useWalletManager } from './useWalletManager';
  * const {
  *   // === 基础状态 ===
  *   status, accounts, currentAccount, network, error,
- *   currentWallet, isConnected, isConnecting, theme,
+ *   currentWallet, isConnected, isConnecting,
  *   address, balance, publicKey,
  *
  *   // === 连接操作 ===
@@ -92,7 +91,6 @@ import { useWalletManager } from './useWalletManager';
 export function useWallet() {
   const ctx = useWalletContext();
   const { currentAdapter, availableAdapters, manager } = useWalletManager();
-  const { theme } = useTheme();
 
   // === 基础状态 ===
   const status = computed(() => ctx.state.value.status);
@@ -158,10 +156,10 @@ export function useWallet() {
 
   // === 模态框控制 ===
   const walletModal = {
-    isModalOpen: ctx.isModalOpen,
-    openModal: ctx.openModal,
-    closeModal: ctx.closeModal,
-    toggleModal: ctx.toggleModal,
+    isOpen: ctx.isModalOpen,
+    open: ctx.openModal,
+    close: ctx.closeModal,
+    toggle: ctx.toggleModal,
   };
 
   // === 签名功能 ===
@@ -232,7 +230,6 @@ export function useWallet() {
     currentWallet,
     isConnected,
     isConnecting,
-    theme,
 
     // === 账户信息 ===
     address,

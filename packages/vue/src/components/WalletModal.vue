@@ -11,7 +11,7 @@
       tabindex="-1"
     >
     <div
-      :class="`btc-modal-container theme-${theme} ${className}`"
+      :class="`btc-modal-container theme-${currentTheme} ${className}`"
       :style="buttonStyles"
       @click.stop
       @keydown="(e) => {
@@ -23,10 +23,10 @@
       }"
     >
       <!-- Modal header -->
-      <div :class="`btc-modal-header theme-${theme}`">
+      <div :class="`btc-modal-header theme-${currentTheme}`">
         <h2 class="btc-modal-title">{{ title }}</h2>
         <button
-          :class="`btc-modal-close theme-${theme}`"
+          :class="`btc-modal-close theme-${currentTheme}`"
           @click="closeModal"
           aria-label="Close modal"
         >
@@ -40,14 +40,14 @@
           <li
             v-for="wallet in walletInfos"
             :key="wallet.id"
-            :class="`btc-wallet-item theme-${theme}`"
+            :class="`btc-wallet-item theme-${currentTheme}`"
           >
             <button
               class="btc-wallet-button"
               @click="handleWalletSelect(wallet)"
             >
               <!-- Wallet icon -->
-              <div :class="`btc-wallet-icon theme-${theme}`">
+              <div :class="`btc-wallet-icon theme-${currentTheme}`">
                 <img
                   v-if="wallet.icon.startsWith('http')"
                   :src="wallet.icon"
@@ -62,7 +62,7 @@
                   {{ wallet.name }}
                   <span v-if="wallet.recommended"> ⭐</span>
                 </h3>
-                <p :class="`btc-wallet-description theme-${theme}`">
+                <p :class="`btc-wallet-description theme-${currentTheme}`">
                   {{ wallet.description }}
                 </p>
               </div>
@@ -77,8 +77,8 @@
       </div>
 
       <!-- Modal footer -->
-      <div :class="`btc-modal-footer theme-${theme}`">
-        <p :class="`btc-disclaimer theme-${theme}`">
+      <div :class="`btc-modal-footer theme-${currentTheme}`">
+        <p :class="`btc-disclaimer theme-${currentTheme}`">
           By connecting a wallet, you agree to the Terms of Service and Privacy Policy
         </p>
       </div>
@@ -91,6 +91,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useConnectWallet, useWalletModal, useWallet } from '../composables';
 import { getAllAdapters } from '@btc-connect/core';
+import { getCurrentTheme, isDarkMode } from '../utils/themeDetection';
 
 // Props
 interface Props {
@@ -98,7 +99,6 @@ interface Props {
   class?: string;
   style?: Record<string, any>;
   isOpen?: boolean;
-  theme?: 'light' | 'dark' | 'auto';
   wallets?: any[];
 }
 
@@ -107,7 +107,6 @@ const props = withDefaults(defineProps<Props>(), {
   class: '',
   style: () => ({}),
   isOpen: false,
-  theme: 'light',
   wallets: () => [],
 });
 
@@ -120,10 +119,51 @@ const emit = defineEmits<{
 // Composables
 const { availableWallets, connect } = useConnectWallet();
 const { isOpen: isModalOpen, close: closeModal } = useWalletModal();
-const { theme } = useWallet();
 
 // State
 const backdropRef = ref<HTMLElement>();
+
+// 使用 TailwindCSS 兼容的主题检测
+const currentTheme = ref<'light' | 'dark'>(getCurrentTheme());
+
+// 监听主题变化
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    let observer: MutationObserver | null = null;
+
+    const checkTheme = () => {
+      const newTheme = isDarkMode() ? 'dark' : 'light';
+      if (currentTheme.value !== newTheme) {
+        currentTheme.value = newTheme;
+      }
+    };
+
+    // 创建 MutationObserver 监听 HTML class 变化
+    observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          checkTheme();
+        }
+      });
+    });
+
+    // 开始监听 HTML 元素的 class 变化
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    // 初始检查
+    checkTheme();
+
+    onUnmounted(() => {
+      if (observer) {
+        observer.disconnect();
+        observer = null;
+      }
+    });
+  }
+});
 
 // Computed
 const walletInfos = computed(() => {
