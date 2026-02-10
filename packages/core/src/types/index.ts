@@ -106,6 +106,82 @@ export interface AccountInfo {
   network?: Network;
 }
 
+// === 统一的选项类型定义 ===
+
+/**
+ * 签名消息选项
+ */
+export interface SignMessageOptions {
+  type?: 'ecdsa' | 'bip322-simple';
+}
+
+/**
+ * 发送比特币选项
+ */
+export interface SendBitcoinOptions {
+  feeRate?: number;
+  memo?: string;
+  memos?: string[];
+}
+
+/**
+ * 发送铭文选项
+ */
+export interface SendInscriptionOptions {
+  feeRate?: number;
+}
+
+/**
+ * 获取铭文列表选项
+ */
+export interface GetInscriptionsOptions {
+  cursor?: number;
+  size?: number;
+}
+
+/**
+ * 铭文信息接口（统一格式）
+ */
+export interface InscriptionInfo {
+  inscriptionId: string;
+  inscriptionNumber: string;
+  address: string;
+  outputValue: string;
+  content?: string; // UniSat 特有
+  contentLength: string;
+  contentType: string | number; // OKX 可能返回数字
+  preview?: string; // UniSat 特有
+  timestamp: number;
+  offset: number;
+  genesisTransaction: string;
+  location: string;
+  output: string;
+}
+
+/**
+ * 铭文列表响应
+ */
+export interface InscriptionsResponse {
+  total: number;
+  list: InscriptionInfo[];
+}
+
+/**
+ * 余额信息接口（统一格式）
+ */
+export interface BalanceInfo {
+  confirmed: number;
+  unconfirmed: number;
+  total: number;
+}
+
+/**
+ * 推送交易选项
+ */
+export interface PushTxOptions {
+  rawTx: string; // 统一使用这个格式
+}
+
 // 钱包状态
 export interface WalletState {
   status: ConnectionStatus;
@@ -360,7 +436,7 @@ export class WalletConnectionError extends WalletError {
     originalError?: Error,
   ) {
     super(
-      `Failed to connect to ${walletId}: ${message}`,
+      message, // 直接使用原始错误消息，避免重复
       'WALLET_CONNECTION_ERROR',
       {
         walletId,

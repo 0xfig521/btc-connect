@@ -7,6 +7,7 @@
 import type {
   AccountInfo,
   BalanceDetail,
+  BTCWalletAdapter,
   BTCWalletManager,
   Network,
   WalletEvent,
@@ -252,6 +253,24 @@ export interface UseSignatureReturn {
   signMessage: (message: string) => Promise<string>;
   /** 签名 PSBT */
   signPsbt: (psbt: string) => Promise<string>;
+}
+
+// useWalletManager 返回类型
+export interface UseWalletManagerReturn {
+  /** 当前适配器 */
+  currentAdapter: ComputedRef<BTCWalletAdapter | null>;
+  /** 所有可用适配器 */
+  availableAdapters: ComputedRef<BTCWalletAdapter[]>;
+  /** 适配器状态 */
+  adapterStates: ComputedRef<Record<string, WalletState>>;
+  /** 获取特定适配器 */
+  getAdapter: (walletId: string) => BTCWalletAdapter | null;
+  /** 添加适配器 */
+  addAdapter: (adapter: BTCWalletAdapter) => void;
+  /** 移除适配器 */
+  removeAdapter: (walletId: string) => boolean;
+  /** 钱包管理器 */
+  manager: Ref<BTCWalletManager | null>;
 }
 
 // === 钱包上下文类型 ===

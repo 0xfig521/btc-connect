@@ -1,9 +1,9 @@
 import type {
   BTCWalletAdapter,
-  UseWalletManagerReturn,
   WalletState,
 } from '@btc-connect/core';
 import { computed, ref } from 'vue';
+import type { UseWalletManagerReturn } from '../types';
 import { useWalletContext } from '../walletContext';
 
 /**
@@ -50,6 +50,8 @@ export function useWalletManager(): UseWalletManagerReturn {
 
   // 当前激活的适配器
   const currentAdapter = computed(() => {
+    // 依赖trigger确保状态变化时能重新计算
+    ctx._stateUpdateTrigger.value;
     if (!ctx.manager.value || !ctx.currentWallet.value) {
       return null;
     }
@@ -58,26 +60,20 @@ export function useWalletManager(): UseWalletManagerReturn {
 
   // 所有可用适配器（内置 + 自定义）
   const availableAdapters = computed(() => {
+    // 依赖trigger确保状态变化时能重新计算
+    ctx._stateUpdateTrigger.value;
     if (!ctx.manager.value) {
       return [];
     }
 
-    // 由于 getAdapters 方法不存在，我们使用已知的钱包列表
-    const builtInAdapters: BTCWalletAdapter[] = [];
-    const walletIds = ['unisat', 'okx', 'xverse'];
-
-    walletIds.forEach((walletId) => {
-      const adapter = ctx.manager.value?.getAdapter(walletId);
-      if (adapter) {
-        builtInAdapters.push(adapter);
-      }
-    });
-
+    const builtInAdapters = ctx.manager.value.getAllAdapters();
     return [...builtInAdapters, ...customAdapters.value];
   });
 
   // 适配器状态映射
   const adapterStates = computed(() => {
+    // 依赖trigger确保状态变化时能重新计算
+    ctx._stateUpdateTrigger.value;
     const states: Record<string, WalletState> = {};
 
     if (!ctx.manager.value) {
@@ -85,37 +81,14 @@ export function useWalletManager(): UseWalletManagerReturn {
     }
 
     // 获取所有已知适配器的状态
-    const walletIds = ['unisat', 'okx', 'xverse'];
-    walletIds.forEach((walletId) => {
-      const adapter = ctx.manager.value?.getAdapter(walletId);
-      if (adapter) {
-        try {
-          if (adapter.isReady()) {
-            states[adapter.id] = adapter.getState();
-          }
-        } catch (error) {
-          console.warn(`Failed to get state for adapter ${adapter.id}:`, error);
-          states[adapter.id] = {
-            status: 'disconnected',
-            accounts: [],
-            network: 'livenet',
-            error: null,
-          };
-        }
-      }
-    });
-
-    // 包含自定义适配器的状态
-    customAdapters.value.forEach((adapter) => {
+    const adapters = availableAdapters.value;
+    adapters.forEach((adapter) => {
       try {
         if (adapter.isReady()) {
           states[adapter.id] = adapter.getState();
         }
       } catch (error) {
-        console.warn(
-          `Failed to get state for custom adapter ${adapter.id}:`,
-          error,
-        );
+        console.warn(`Failed to get state for adapter ${adapter.id}:`, error);
         states[adapter.id] = {
           status: 'disconnected',
           accounts: [],
@@ -159,11 +132,12 @@ export function useWalletManager(): UseWalletManagerReturn {
     }
 
     // 同时添加到管理器（如果管理器支持）
-    if (ctx.manager.value && 'addAdapter' in ctx.manager.value) {
+    if (ctx.manager.value && 'register' in ctx.manager.value) {
       try {
-        (ctx.manager.value as any).addAdapter(adapter);
+        (ctx.manager.value as any).register(adapter);
+        ctx._stateUpdateTrigger.value++;
       } catch (error) {
-        console.warn(`Failed to add adapter ${adapter.id} to manager:`, error);
+        console.warn(`Failed to register adapter ${adapter.id} to manager:`, error);
       }
     }
   };
@@ -178,12 +152,13 @@ export function useWalletManager(): UseWalletManagerReturn {
     customAdapters.value.splice(index, 1);
 
     // 同时从管理器中移除（如果管理器支持）
-    if (ctx.manager.value && 'removeAdapter' in ctx.manager.value) {
+    if (ctx.manager.value && 'unregister' in ctx.manager.value) {
       try {
-        (ctx.manager.value as any).removeAdapter(walletId);
+        (ctx.manager.value as any).unregister(walletId);
+        ctx._stateUpdateTrigger.value++;
       } catch (error) {
         console.warn(
-          `Failed to remove adapter ${walletId} from manager:`,
+          `Failed to unregister adapter ${walletId} from manager:`,
           error,
         );
       }
@@ -260,13 +235,13 @@ export function useWalletManager(): UseWalletManagerReturn {
   };
 
   return {
-    currentAdapter: currentAdapter.value,
-    availableAdapters: availableAdapters.value,
-    adapterStates: adapterStates.value,
+    currentAdapter,
+    availableAdapters,
+    adapterStates,
     getAdapter,
     addAdapter,
     removeAdapter,
-    manager: ctx.manager.value,
+    manager: ctx.manager,
   };
 }
 
@@ -317,7 +292,7 @@ export function useWalletManagerAdvanced() {
 
   // 批量连接多个钱包
   const connectMultiple = async (walletIds: string[]) => {
-    if (!manager) {
+    if (!manager.value) {
       throw new Error('Manager not available');
     }
 
@@ -364,11 +339,11 @@ export function useWalletManagerAdvanced() {
 
   // 断开所有连接
   const disconnectAll = async () => {
-    if (!manager) {
+    if (!manager.value) {
       return;
     }
 
-    const adapters = availableAdapters;
+    const adapters = availableAdapters.value;
     const results: Array<{
       walletId: string;
       success: boolean;
@@ -395,11 +370,11 @@ export function useWalletManagerAdvanced() {
 
   // 切换所有钱包到指定网络
   const switchAllToNetwork = async (network: string) => {
-    if (!manager) {
+    if (!manager.value) {
       throw new Error('Manager not available');
     }
 
-    const adapters = availableAdapters;
+    const adapters = availableAdapters.value;
     const results: Array<{
       walletId: string;
       success: boolean;
@@ -435,11 +410,11 @@ export function useWalletManagerAdvanced() {
 
   // 健康检查
   const healthCheck = async () => {
-    if (!manager) {
+    if (!manager.value) {
       return { status: 'error', message: 'Manager not available' };
     }
 
-    const adapters = availableAdapters;
+    const adapters = availableAdapters.value;
     const health = {
       status: 'healthy' as 'healthy' | 'warning' | 'error',
       message: '',
@@ -503,15 +478,15 @@ export function useWalletManagerAdvanced() {
   // 适配器监控
   const adapterMonitor = () => {
     const stats = {
-      totalAdapters: availableAdapters.length,
-      readyAdapters: availableAdapters.filter((a) => a.isReady()).length,
-      connectedAdapters: Object.values(adapterStates).filter(
+      totalAdapters: availableAdapters.value.length,
+      readyAdapters: availableAdapters.value.filter((a) => a.isReady()).length,
+      connectedAdapters: Object.values(adapterStates.value).filter(
         (s) => s.status === 'connected',
       ).length,
-      adaptersWithErrors: Object.values(adapterStates).filter(
+      adaptersWithErrors: Object.values(adapterStates.value).filter(
         (s) => s.status === 'error',
       ).length,
-      currentAdapter: currentAdapter?.id || null,
+      currentAdapter: currentAdapter.value?.id || null,
       timestamp: new Date().toISOString(),
     };
 

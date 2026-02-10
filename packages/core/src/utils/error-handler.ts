@@ -176,17 +176,15 @@ export class WalletErrorHandler {
   static async safeExecute<T>(
     operation: () => Promise<T>,
     errorFactory: (error: Error) => WalletError,
-    _context?: Partial<ErrorContext>,
+    context?: Partial<ErrorContext>,
   ): Promise<T> {
     try {
       return await operation();
     } catch (error) {
-      const walletError =
-        error instanceof WalletError
-          ? error
-          : errorFactory(
-              error instanceof Error ? error : new Error(String(error)),
-            );
+      // 直接传递原始错误，不做额外处理
+      const walletError = errorFactory(
+        error instanceof Error ? error : new Error(String(error)),
+      );
 
       // 获取错误处理器实例并处理错误
       WalletErrorHandler.getInstance().errorManager.handleError(walletError);

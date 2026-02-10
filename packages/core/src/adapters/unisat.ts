@@ -1,6 +1,13 @@
 import type {
   AccountInfo,
+  BalanceInfo,
+  GetInscriptionsOptions,
+  InscriptionsResponse,
   Network,
+  PushTxOptions,
+  SendBitcoinOptions,
+  SendInscriptionOptions,
+  SignMessageOptions,
   UniSatBalance,
   UniSatChainInfo,
   UniSatInscriptionsResponse,
@@ -8,7 +15,6 @@ import type {
   UniSatSendInscriptionOptions,
   UniSatSendRunesOptions,
   UniSatSignPsbtOptions,
-  UniSatWalletAdapter,
 } from '../types';
 import { BaseWalletAdapter } from './base';
 
@@ -148,10 +154,7 @@ declare global {
 /**
  * UniSat钱包适配器 - 完整实现所有 Unisat API
  */
-export class UniSatAdapter
-  extends BaseWalletAdapter
-  implements UniSatWalletAdapter
-{
+export class UniSatAdapter extends BaseWalletAdapter {
   readonly id = 'unisat';
   readonly name = 'UniSat Wallet';
   readonly icon = 'https://next-cdn.unisat.io/_/2025-v1242/logo/color.svg';
@@ -373,7 +376,7 @@ export class UniSatAdapter
   /**
    * 获取余额
    */
-  override async getBalance(): Promise<UniSatBalance> {
+  override async getBalance(): Promise<BalanceInfo> {
     return this.executeWalletOperation(
       async (wallet) => await wallet.getBalance(),
       'Failed to get balance from UniSat wallet',
@@ -387,12 +390,35 @@ export class UniSatAdapter
   /**
    * 获取 Inscriptions
    */
-  async getInscriptions(
-    cursor: number = 0,
-    size: number = 10,
-  ): Promise<UniSatInscriptionsResponse> {
+  override async getInscriptions(
+    options?: GetInscriptionsOptions,
+  ): Promise<InscriptionsResponse> {
+    const cursor = options?.cursor ?? 0;
+    const size = options?.size ?? 10;
+
     return this.executeWalletOperation(
-      async (wallet) => await wallet.getInscriptions(cursor, size),
+      async (wallet) => {
+        const result = await wallet.getInscriptions(cursor, size);
+        // 转换为统一格式
+        return {
+          total: result.total,
+          list: result.list.map((item: any) => ({
+            inscriptionId: item.inscriptionId,
+            inscriptionNumber: item.inscriptionNumber,
+            address: item.address,
+            outputValue: item.outputValue,
+            content: item.content, // UniSat 特有
+            contentLength: item.contentLength,
+            contentType: item.contentType,
+            preview: item.preview, // UniSat 特有
+            timestamp: item.timestamp,
+            offset: item.offset,
+            genesisTransaction: item.genesisTransaction,
+            location: item.location,
+            output: item.output,
+          })),
+        };
+      },
       'Failed to get inscriptions from UniSat wallet',
       {
         operation: 'getInscriptions',
@@ -456,7 +482,7 @@ export class UniSatAdapter
   override async sendInscription(
     address: string,
     inscriptionId: string,
-    options?: UniSatSendInscriptionOptions,
+    options?: SendInscriptionOptions,
   ): Promise<string> {
     return this.executeWalletOperation(
       async (wallet) => {
@@ -541,9 +567,9 @@ export class UniSatAdapter
   /**
    * 推送原始交易
    */
-  override async pushTx(rawtx: string): Promise<string> {
+  override async pushTx(options: PushTxOptions): Promise<string> {
     return this.executeWalletOperation(
-      async (wallet) => await wallet.pushTx({ rawtx }),
+      async (wallet) => await wallet.pushTx({ rawtx: options.rawTx }),
       'Failed to push transaction with UniSat wallet',
       {
         operation: 'pushTx',
@@ -557,10 +583,10 @@ export class UniSatAdapter
    */
   override async signMessageAdvanced(
     message: string,
-    type?: 'ecdsa' | 'bip322-simple',
+    options?: SignMessageOptions,
   ): Promise<string> {
     return this.executeWalletOperation(
-      async (wallet) => await wallet.signMessage(message, type),
+      async (wallet) => await wallet.signMessage(message, options?.type),
       'Failed to sign advanced message with UniSat wallet',
       {
         operation: 'signMessageAdvanced',
@@ -575,7 +601,7 @@ export class UniSatAdapter
   override async sendBitcoinAdvanced(
     toAddress: string,
     satoshis: number,
-    options?: UniSatSendBitcoinOptions,
+    options?: SendBitcoinOptions,
   ): Promise<string> {
     return this.executeWalletOperation(
       async (wallet) => await wallet.sendBitcoin(toAddress, satoshis, options),

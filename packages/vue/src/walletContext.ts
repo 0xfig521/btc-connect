@@ -9,7 +9,7 @@ import {
   type WalletState,
 } from '@btc-connect/core';
 import type { App } from 'vue';
-import { type ComputedRef, computed, inject, type Ref, ref } from 'vue';
+import { type ComputedRef, computed, inject, nextTick, type Ref, ref } from 'vue';
 import { storage, WalletDetectionManager } from './utils';
 
 // 定义 Context 类型
@@ -85,6 +85,14 @@ function createWalletContext(): WalletContext {
       network: 'livenet' as Network,
       error: undefined,
     };
+
+    // 🔧 增强响应式更新：强制检查管理器状态变化
+    if (manager.value) {
+      const currentState = manager.value.getState();
+      console.log('🧪 [BTC-Connect:Vue] State computed re-evaluated:', currentState.status);
+      // 确保状态是最新值，避免缓存问题
+      return currentState;
+    }
 
     return managerState;
   });
@@ -343,7 +351,7 @@ export function useProvidedWalletContext(): WalletContext {
   if (!context) {
     throw new Error(
       'useProvidedWalletContext must be used within a BTCWalletPlugin. ' +
-        'Make sure you have installed BTCWalletPlugin in your app.',
+      'Make sure you have installed BTCWalletPlugin in your app.',
     );
   }
 
@@ -378,17 +386,17 @@ function createEmptyContext(): WalletContext {
     connect: async () => {
       throw new Error('Wallet context not initialized in SSR');
     },
-    disconnect: async () => {},
+    disconnect: async () => { },
     switchWallet: async () => {
       throw new Error('Wallet context not initialized in SSR');
     },
-    openModal: () => {},
-    closeModal: () => {},
-    toggleModal: () => {},
+    openModal: () => { },
+    closeModal: () => { },
+    toggleModal: () => { },
 
     // 钱包检测方法
-    startWalletDetection: async () => {},
-    stopWalletDetection: () => {},
+    startWalletDetection: async () => { },
+    stopWalletDetection: () => { },
 
     // 内部状态更新trigger
     _stateUpdateTrigger: ref(0),
@@ -438,9 +446,16 @@ export const BTCWalletPlugin = {
         modalConfig: modalConfig || config?.modalConfig,
         onStateChange: (state: WalletState) => {
           // 状态变化时强制更新Vue响应式系统
-          console.log('🔄 [walletContext] State changed:', state);
-          // 增加trigger值强制重新计算
+          console.log('🔄 [BTC-Connect:Vue] State changed:', state.status, state.currentAccount?.address);
+
+          // 🔧 增强响应式更新：立即强制触发状态更新
           context._stateUpdateTrigger.value++;
+
+          // 🔧 双重保险：使用 nextTick 确保响应式更新
+          nextTick(() => {
+            console.log('🔄 [BTC-Connect:Vue] Triggering nextTick update');
+            context._stateUpdateTrigger.value++;
+          });
 
           // 当连接成功时，通过事件获取账户详情
           if (state.status === 'connected' && state.currentAccount) {
@@ -450,9 +465,10 @@ export const BTCWalletPlugin = {
             }, 100);
           }
 
-          // 使用nextTick确保状态更新在下一个事件循环中处理
+          // 🔧 三重保险：强制重新计算所有依赖的computed
           setTimeout(() => {
-            // 强制重新计算所有依赖的computed
+            context._stateUpdateTrigger.value++;
+            // 强制访问这些属性，触发重新计算
             context.state;
             context.currentWallet;
             context.isConnected;
@@ -569,15 +585,15 @@ async function fetchAccountDetails(manager: BTCWalletManager): Promise<void> {
       const bal = await adapter.getBalance?.();
       const detail: BalanceDetail | null =
         bal &&
-        typeof bal === 'object' &&
-        typeof bal.confirmed === 'number' &&
-        typeof bal.unconfirmed === 'number' &&
-        typeof bal.total === 'number'
+          typeof bal === 'object' &&
+          typeof bal.confirmed === 'number' &&
+          typeof bal.unconfirmed === 'number' &&
+          typeof bal.total === 'number'
           ? {
-              confirmed: bal.confirmed,
-              unconfirmed: bal.unconfirmed,
-              total: bal.total,
-            }
+            confirmed: bal.confirmed,
+            unconfirmed: bal.unconfirmed,
+            total: bal.total,
+          }
           : null;
       if (detail) {
         updatePayload.balance = detail;

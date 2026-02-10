@@ -2,10 +2,17 @@ import { CacheKeyBuilder, CacheManager, type MemoryCache } from '../cache';
 import { WalletEventManager } from '../events';
 import type {
   AccountInfo,
+  BalanceInfo,
   BTCWalletAdapter,
   ErrorContext,
   EventHandler,
+  GetInscriptionsOptions,
+  InscriptionsResponse,
   Network,
+  PushTxOptions,
+  SendBitcoinOptions,
+  SendInscriptionOptions,
+  SignMessageOptions,
   WalletEvent,
   WalletState,
 } from '../types';
@@ -192,27 +199,12 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
    */
   protected async executeWalletOperation<T>(
     operation: (wallet: any) => Promise<T>,
-    operationName: string,
-    context?: Partial<ErrorContext>,
+    _operationName: string,
+    _context?: Partial<ErrorContext>,
   ): Promise<T> {
-    return WalletErrorHandler.safeExecute(
-      () => {
-        const wallet = this.getWalletInstance();
-        this.checkWalletAvailability();
-        return operation(wallet);
-      },
-      (error: Error) =>
-        WalletErrorHandler.createConnectionError(
-          this.id,
-          `${operationName} failed: ${error instanceof Error ? error.message : String(error)}`,
-          error,
-          {
-            operation: operationName,
-            ...context,
-          },
-        ),
-      context,
-    );
+    const wallet = this.getWalletInstance();
+    this.checkWalletAvailability();
+    return operation(wallet); // 直接抛出钱包的原始错误
   }
 
   /**
@@ -284,20 +276,9 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
       this.state.status = 'error';
       this.state.error =
         error instanceof Error ? error : new Error(String(error));
-      const walletError =
-        error instanceof WalletError
-          ? error
-          : new WalletError(
-              error instanceof Error ? error.message : String(error),
-              'UNKNOWN_ERROR',
-              {},
-              error instanceof Error ? error : undefined,
-            );
-      this.eventManager.emitError(this.id, walletError);
-      throw new WalletConnectionError(
-        this.id,
-        error instanceof Error ? error.message : String(error),
-      );
+
+      // 直接抛出钱包的原始错误，不做任何封装
+      throw error;
     }
   }
 
@@ -323,17 +304,9 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
       this.state.status = 'error';
       this.state.error =
         error instanceof Error ? error : new Error(String(error));
-      const walletError =
-        error instanceof WalletError
-          ? error
-          : new WalletError(
-              error instanceof Error ? error.message : String(error),
-              'UNKNOWN_ERROR',
-              {},
-              error instanceof Error ? error : undefined,
-            );
-      this.eventManager.emitError(this.id, walletError);
-      throw new WalletDisconnectedError(this.id);
+
+      // 直接抛出钱包的原始错误，不做任何封装
+      throw error;
     }
   }
 
@@ -394,7 +367,7 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   /**
    * 获取余额
    */
-  async getBalance(): Promise<any> {
+  async getBalance(): Promise<BalanceInfo> {
     if (!this.isConnected) {
       throw new WalletDisconnectedError(this.id);
     }
@@ -429,13 +402,16 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   /**
    * 高级签名消息（支持多种签名类型）
    */
-  async signMessageAdvanced(message: string, type?: string): Promise<string> {
+  async signMessageAdvanced(
+    message: string,
+    options?: SignMessageOptions,
+  ): Promise<string> {
     if (!this.isConnected) {
       throw new WalletDisconnectedError(this.id);
     }
 
     if (this.handleSignMessageAdvanced) {
-      return await this.handleSignMessageAdvanced(message, type);
+      return await this.handleSignMessageAdvanced(message, options);
     }
 
     // 回退到基础签名方法
@@ -448,7 +424,7 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   async sendBitcoinAdvanced(
     toAddress: string,
     amount: number,
-    options?: any,
+    options?: SendBitcoinOptions,
   ): Promise<string> {
     if (!this.isConnected) {
       throw new WalletDisconnectedError(this.id);
@@ -468,7 +444,7 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   async sendInscription(
     address: string,
     inscriptionId: string,
-    options?: any,
+    options?: SendInscriptionOptions,
   ): Promise<string> {
     if (!this.isConnected) {
       throw new WalletDisconnectedError(this.id);
@@ -484,16 +460,33 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   /**
    * 推送交易
    */
-  async pushTx(rawTx: string): Promise<string> {
+  async pushTx(options: PushTxOptions): Promise<string> {
     if (!this.isConnected) {
       throw new WalletDisconnectedError(this.id);
     }
 
     if (this.handlePushTx) {
-      return await this.handlePushTx(rawTx);
+      return await this.handlePushTx(options);
     }
 
     throw new Error(`${this.name} does not support pushTx`);
+  }
+
+  /**
+   * 获取铭文列表
+   */
+  async getInscriptions(
+    options?: GetInscriptionsOptions,
+  ): Promise<InscriptionsResponse> {
+    if (!this.isConnected) {
+      throw new WalletDisconnectedError(this.id);
+    }
+
+    if (this.handleGetInscriptions) {
+      return await this.handleGetInscriptions(options || {});
+    }
+
+    throw new Error(`${this.name} does not support getInscriptions`);
   }
 
   /**
@@ -618,22 +611,25 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
    */
   protected handleRequestAccounts?(): Promise<AccountInfo[]>;
   protected handleGetPublicKey?(): Promise<string>;
-  protected handleGetBalance?(): Promise<any>;
+  protected handleGetBalance?(): Promise<BalanceInfo>;
   protected handleSignMessageAdvanced?(
     message: string,
-    type?: string,
+    options?: SignMessageOptions,
   ): Promise<string>;
   protected handleSendBitcoinAdvanced?(
     toAddress: string,
     amount: number,
-    options?: any,
+    options?: SendBitcoinOptions,
   ): Promise<string>;
   protected handleSendInscription?(
     address: string,
     inscriptionId: string,
-    options?: any,
+    options?: SendInscriptionOptions,
   ): Promise<string>;
-  protected handlePushTx?(rawTx: string): Promise<string>;
+  protected handlePushTx?(options: PushTxOptions): Promise<string>;
+  protected handleGetInscriptions?(
+    options: GetInscriptionsOptions,
+  ): Promise<InscriptionsResponse>;
 
   /**
    * 更新账户信息

@@ -60,6 +60,11 @@
         </div>
       </div>
 
+      <!-- 响应式调试面板 -->
+      <ClientOnly>
+        <WalletDebugPanel class="mb-8" />
+      </ClientOnly>
+
       <!-- AutoConnect 状态监控 -->
       <AutoConnectStatusCard class="mb-8" />
 
@@ -260,6 +265,7 @@ import {
   useNetwork,
   useWalletInfo
 } from '@btc-connect/vue'
+import WalletDebugPanel from './WalletDebugPanel.vue'
 
 // 页面元数据
 useHead({
@@ -276,6 +282,9 @@ const isRunning = ref(false)
 
 // 钱包状态
 const { status, accounts, currentAccount, network, error, isConnected, isConnecting, address, balance, publicKey } = useWallet()
+const wallet = useWallet()
+
+console.log('wallet', wallet)
 const { connect, disconnect, switchWallet, availableWallets } = useConnectWallet()
 const { open: openModal, isOpen: isModalOpen } = useWalletModal()
 const { network: currentNetwork, switchNetwork } = useNetwork()

@@ -92,7 +92,7 @@ export function BTCWalletProvider({
   }, [config, modalConfig]);
 
   // 延迟初始化 manager
-  useLayoutEffect(() => {
+  useEffect(() => {
     const manager = initManager();
     dispatch(walletActionCreators.setManager(manager));
 
@@ -134,10 +134,10 @@ export function BTCWalletProvider({
                   const adapter = manager.getAdapter(walletId);
                   return adapter
                     ? {
-                        id: adapter.id,
-                        name: adapter.name,
-                        icon: adapter.icon,
-                      }
+                      id: adapter.id,
+                      name: adapter.name,
+                      icon: adapter.icon,
+                    }
                     : null;
                 })
                 .filter((wallet): wallet is WalletInfo => wallet !== null);
@@ -182,6 +182,7 @@ export function BTCWalletProvider({
   const updateState = useCallback(() => {
     if (manager) {
       const newState = manager.getState();
+      console.log('[BTC-Connect:React] Updating state:', newState.status);
       dispatch(walletActionCreators.setState(newState));
       dispatch(
         walletActionCreators.setCurrentWallet(manager.getCurrentWallet()),
@@ -220,15 +221,15 @@ export function BTCWalletProvider({
         const bal = await adapter.getBalance?.();
         const detail: BalanceDetail | null =
           bal &&
-          typeof bal === 'object' &&
-          typeof bal.confirmed === 'number' &&
-          typeof bal.unconfirmed === 'number' &&
-          typeof bal.total === 'number'
+            typeof bal === 'object' &&
+            typeof bal.confirmed === 'number' &&
+            typeof bal.unconfirmed === 'number' &&
+            typeof bal.total === 'number'
             ? {
-                confirmed: bal.confirmed,
-                unconfirmed: bal.unconfirmed,
-                total: bal.total,
-              }
+              confirmed: bal.confirmed,
+              unconfirmed: bal.unconfirmed,
+              total: bal.total,
+            }
             : null;
         if (detail) {
           updatePayload.balance = detail;
@@ -248,9 +249,11 @@ export function BTCWalletProvider({
   // 监听状态变化和账户变化，通过事件驱动获取账户详情
   useEffect(() => {
     if (manager) {
+      console.log('[BTC-Connect:React] Setting up manager event listeners...');
       if (config?.onStateChange) {
         const originalHandler = config.onStateChange;
         config.onStateChange = (newState: WalletState) => {
+          console.log('[BTC-Connect:React] onStateChange called:', newState.status);
           updateState();
           // 当连接成功时，通过事件获取账户详情
           if (newState.status === 'connected' && newState.currentAccount) {
@@ -341,7 +344,7 @@ export function BTCWalletProvider({
             // 回滚连接状态并抛错
             try {
               await manager.disconnect();
-            } catch {}
+            } catch { }
             throw new Error('Connection policy failed');
           }
         }
@@ -438,7 +441,7 @@ export function BTCWalletProvider({
                 if (manager) {
                   await manager.disconnect();
                 }
-              } catch {}
+              } catch { }
             } else {
               // 成功：确保记录 last wallet（如果存在）
               storage.set('btc-connect:last-wallet-id', lastWalletId);
