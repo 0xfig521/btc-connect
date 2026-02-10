@@ -31,9 +31,11 @@ export class BTCWalletManager implements WalletManager {
    * 初始化适配器
    */
   public initializeAdapters(): void {
+    console.log('[BTC-Connect:Core] Initializing adapters...');
     const availableAdapters = getAvailableAdapters();
 
     for (const adapter of availableAdapters) {
+      console.log(`[BTC-Connect:Core] Registering adapter: ${adapter.id}`);
       this.register(adapter);
     }
   }
@@ -137,10 +139,12 @@ export class BTCWalletManager implements WalletManager {
     }
 
     try {
+      console.log(`[BTC-Connect:Core] Connecting to wallet: ${walletId}`);
       // 连接钱包（由外层控制超时/交互）
       const accounts = await adapter.connect();
 
       this.currentAdapter = adapter;
+      console.log(`[BTC-Connect:Core] Successfully connected to ${walletId}`, accounts);
 
       // 发射连接事件
       this.eventManager.emitConnect(walletId, accounts);
@@ -164,12 +168,12 @@ export class BTCWalletManager implements WalletManager {
         error instanceof WalletError
           ? error
           : new WalletError(
-              error instanceof Error ? error.message : String(error),
-              'UNKNOWN_ERROR',
-              {},
-              error instanceof Error ? error : undefined,
-            );
-      this.eventManager.emitError(this.currentAdapter!.id, walletError);
+            error instanceof Error ? error.message : String(error),
+            'UNKNOWN_ERROR',
+            {},
+            error instanceof Error ? error : undefined,
+          );
+      this.eventManager.emitError(this.currentAdapter?.id ?? 'unknown', walletError);
 
       throw error;
     }
@@ -209,7 +213,7 @@ export class BTCWalletManager implements WalletManager {
       // 只获取必要的网络信息（更快），移除公钥和余额的自动获取
       try {
         await adapter.getNetwork();
-      } catch {}
+      } catch { }
 
       this.eventManager.emitConnect(walletId, (adapter as any).state.accounts);
       if (this.config.onStateChange) {
@@ -233,6 +237,7 @@ export class BTCWalletManager implements WalletManager {
         // 忽略断开连接的错误
         console.warn('Error disconnecting wallet:', error);
       } finally {
+        console.log(`[BTC-Connect:Core] Disconnected from ${adapterId}`);
         this.currentAdapter = null;
         this.eventManager.emitDisconnect(adapterId);
 
@@ -262,6 +267,9 @@ export class BTCWalletManager implements WalletManager {
     return {
       status: 'disconnected',
       accounts: [],
+      currentAccount: undefined,
+      network: undefined,
+      error: undefined,
     };
   }
 
@@ -343,12 +351,12 @@ export class BTCWalletManager implements WalletManager {
         error instanceof WalletError
           ? error
           : new WalletError(
-              error instanceof Error ? error.message : String(error),
-              'UNKNOWN_ERROR',
-              {},
-              error instanceof Error ? error : undefined,
-            );
-      this.eventManager.emitError(this.currentAdapter!.id, walletError);
+            error instanceof Error ? error.message : String(error),
+            'UNKNOWN_ERROR',
+            {},
+            error instanceof Error ? error : undefined,
+          );
+      this.eventManager.emitError(this.currentAdapter?.id ?? 'unknown', walletError);
 
       throw error;
     }

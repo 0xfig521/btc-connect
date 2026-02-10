@@ -103,14 +103,20 @@ export function useWallet() {
   const isConnecting = ctx.isConnecting;
 
   // === 账户信息 ===
-  const address = computed(() => currentAccount.value?.address || null);
+  const address = computed(() => {
+    return currentAccount.value?.address || null;
+  });
+
   const balance = computed(() => {
     const accBalance = currentAccount.value?.balance;
     const result =
       accBalance && typeof accBalance === 'object' ? accBalance : null;
     return result;
   });
-  const publicKey = computed(() => currentAccount.value?.publicKey || null);
+
+  const publicKey = computed(() => {
+    return currentAccount.value?.publicKey || null;
+  });
 
   // === 连接操作 ===
   const connect = async (walletId: string) => {
@@ -138,12 +144,7 @@ export function useWallet() {
     if (!ctx.manager.value) {
       return [];
     }
-    // 由于 getWallets 方法不存在，我们使用已知的钱包列表
-    return ['unisat', 'okx', 'xverse'].map((id) => ({
-      id,
-      name: id.charAt(0).toUpperCase() + id.slice(1),
-      icon: `/icons/${id}.png`,
-    }));
+    return ctx.manager.value.getAvailableWallets();
   });
 
   // === 网络管理 ===
@@ -164,7 +165,7 @@ export function useWallet() {
 
   // === 签名功能 ===
   const signMessage = async (message: string): Promise<string> => {
-    const adapter = currentAdapter;
+    const adapter = currentAdapter.value;
     if (!adapter || typeof adapter.signMessage !== 'function') {
       throw new Error('Message signing not supported');
     }
@@ -172,7 +173,7 @@ export function useWallet() {
   };
 
   const signPsbt = async (psbt: string): Promise<string> => {
-    const adapter = currentAdapter;
+    const adapter = currentAdapter.value;
     if (!adapter || typeof adapter.signPsbt !== 'function') {
       throw new Error('PSBT signing not supported');
     }
@@ -184,7 +185,7 @@ export function useWallet() {
     toAddress: string,
     amount: number,
   ): Promise<string> => {
-    const adapter = currentAdapter;
+    const adapter = currentAdapter.value;
     if (!adapter || typeof adapter.sendBitcoin !== 'function') {
       throw new Error('Bitcoin sending not supported');
     }

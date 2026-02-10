@@ -51,7 +51,7 @@ import { useWalletContext } from '../context/provider';
  * ```
  */
 export function useWalletManager(): UseWalletManagerReturn {
-  const { manager, currentWallet } = useWalletContext();
+  const { manager, currentWallet, state } = useWalletContext();
 
   // 获取当前适配器
   const currentAdapter = useMemo(() => {
@@ -65,7 +65,7 @@ export function useWalletManager(): UseWalletManagerReturn {
     return manager.getAllAdapters();
   }, [manager]);
 
-  // 获取所有适配器状态
+  // 获取所有适配器状态 - 使用 ref 避免不必要的重计算
   const adapterStates = useMemo<Record<string, WalletState>>(() => {
     if (!manager) return {};
 
