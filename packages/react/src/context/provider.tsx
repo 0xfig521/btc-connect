@@ -76,20 +76,20 @@ export function BTCWalletProvider({
   // 使用 useReducer 管理状态
   const [state, dispatch] = useReducer(walletReducer, initialState);
 
+  // 使用 useMemo 缓存合并后的配置，避免每次渲染创建新对象
+  const finalConfig = useMemo(() => ({
+    ...config,
+    modalConfig: modalConfig || config?.modalConfig,
+  }), [config, modalConfig]);
+
   // SSR 保护：只在客户端初始化 manager
   const initManager = useCallback(() => {
     if (typeof window === 'undefined') {
       return null;
     }
 
-    // 合并modal配置到config中
-    const finalConfig = {
-      ...config,
-      modalConfig: modalConfig || config?.modalConfig,
-    };
-
     return new BTCWalletManager(finalConfig);
-  }, [config, modalConfig]);
+  }, [finalConfig]);
 
   // 延迟初始化 manager
   useEffect(() => {

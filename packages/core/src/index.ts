@@ -44,3 +44,13 @@ export {
   ErrorReporter,
   WalletErrorHandler,
 } from './utils/error-handler';
+
+// 统一错误处理系统
+export {
+  ErrorCode,
+  ErrorSeverity,
+  UnifiedError,
+  ErrorFactory,
+  ErrorUtils,
+  type ErrorContext,
+} from './errors';
