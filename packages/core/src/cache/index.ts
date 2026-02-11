@@ -18,6 +18,17 @@ export {
   MemoryCache,
 } from './memory-cache';
 
+// 增强缓存系统
+export {
+  EnhancedMemoryCache,
+  CacheDefaults,
+  type EnhancedCacheOptions,
+  type CacheStats,
+  type CacheEvent,
+  type CacheEventHandler,
+  type CacheEventType,
+} from './enhanced-cache';
+
 import { CacheManager, type CacheOptions, MemoryCache } from './memory-cache';
 
 // 便捷的缓存实例创建函数

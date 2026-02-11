@@ -24,3 +24,6 @@
 {"t":0,"agent":"aaa2e87","agent_type":"unknown","event":"agent_stop","success":true}
 {"t":0,"agent":"a2a2aa3","agent_type":"unknown","event":"agent_stop","success":true}
 {"t":0,"agent":"a498181","agent_type":"unknown","event":"agent_stop","success":true}
+{"t":0,"agent":"a91bb8e","agent_type":"unknown","event":"agent_stop","success":true}
+{"t":0,"agent":"system","event":"skill_invoked","skill_name":"oh-my-claudecode:cancel"}
+{"t":0,"agent":"ad04db3","agent_type":"unknown","event":"agent_stop","success":true}

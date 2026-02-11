@@ -1,53 +1,7 @@
 {
-  "agents": [
-    {
-      "agent_id": "ac74074",
-      "agent_type": "core-reviewer",
-      "started_at": "2026-02-10T15:25:03.613Z",
-      "parent_mode": "none",
-      "status": "completed",
-      "completed_at": "2026-02-10T15:29:01.561Z",
-      "duration_ms": 237948
-    },
-    {
-      "agent_id": "a774ebf",
-      "agent_type": "react-reviewer",
-      "started_at": "2026-02-10T15:25:15.729Z",
-      "parent_mode": "none",
-      "status": "completed",
-      "completed_at": "2026-02-10T15:28:23.226Z",
-      "duration_ms": 187497
-    },
-    {
-      "agent_id": "aaf0fbd",
-      "agent_type": "vue-reviewer",
-      "started_at": "2026-02-10T15:25:27.876Z",
-      "parent_mode": "none",
-      "status": "completed",
-      "completed_at": "2026-02-10T15:29:10.438Z",
-      "duration_ms": 222562
-    },
-    {
-      "agent_id": "a11f82c",
-      "agent_type": "examples-reviewer",
-      "started_at": "2026-02-10T15:25:38.796Z",
-      "parent_mode": "none",
-      "status": "completed",
-      "completed_at": "2026-02-10T15:31:01.282Z",
-      "duration_ms": 322486
-    },
-    {
-      "agent_id": "ad9cebf",
-      "agent_type": "core-reviewer",
-      "started_at": "2026-02-10T15:29:01.714Z",
-      "parent_mode": "none",
-      "status": "completed",
-      "completed_at": "2026-02-10T15:30:40.952Z",
-      "duration_ms": 99238
-    }
-  ],
-  "total_spawned": 5,
-  "total_completed": 5,
+  "agents": [],
+  "total_spawned": 0,
+  "total_completed": 0,
   "total_failed": 0,
-  "last_updated": "2026-02-11T12:46:50.550Z"
+  "last_updated": "2026-02-11T13:18:56.464Z"
 }

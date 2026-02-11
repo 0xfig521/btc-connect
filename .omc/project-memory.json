@@ -124,9 +124,21 @@
       "type": "file"
     },
     {
+      "path": "packages/core/src/index.ts",
+      "accessCount": 10,
+      "lastAccessed": 1770816155959,
+      "type": "file"
+    },
+    {
       "path": "packages/core/src/types/index.ts",
       "accessCount": 8,
       "lastAccessed": 1770772820209,
+      "type": "file"
+    },
+    {
+      "path": "packages/core/src/cache/memory-cache.ts",
+      "accessCount": 7,
+      "lastAccessed": 1770815969784,
       "type": "file"
     },
     {
@@ -148,18 +160,6 @@
       "type": "file"
     },
     {
-      "path": "packages/core/src/cache/memory-cache.ts",
-      "accessCount": 6,
-      "lastAccessed": 1770814655443,
-      "type": "file"
-    },
-    {
-      "path": "packages/core/src/index.ts",
-      "accessCount": 6,
-      "lastAccessed": 1770815381943,
-      "type": "file"
-    },
-    {
       "path": "",
       "accessCount": 5,
       "lastAccessed": 1770737159246,
@@ -169,6 +169,12 @@
       "path": "packages/react/src/hooks/useWalletManager.ts",
       "accessCount": 5,
       "lastAccessed": 1770737462197,
+      "type": "file"
+    },
+    {
+      "path": "packages/core/src/cache/index.ts",
+      "accessCount": 3,
+      "lastAccessed": 1770816067641,
       "type": "file"
     },
     {
@@ -193,6 +199,12 @@
       "path": "packages/core/src/utils/index.ts",
       "accessCount": 2,
       "lastAccessed": 1770815252888,
+      "type": "file"
+    },
+    {
+      "path": "packages/core/src/events/index.ts",
+      "accessCount": 2,
+      "lastAccessed": 1770815618680,
       "type": "file"
     },
     {
@@ -274,21 +286,9 @@
       "type": "file"
     },
     {
-      "path": "packages/core/src/events/index.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737166386,
-      "type": "file"
-    },
-    {
       "path": "packages/vue/src/composables/useAccount.ts",
       "accessCount": 1,
       "lastAccessed": 1770737166838,
-      "type": "file"
-    },
-    {
-      "path": "packages/core/src/cache/index.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737167557,
       "type": "file"
     },
     {

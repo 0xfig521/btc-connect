@@ -5,8 +5,6 @@
  * 减少网络开销，提高性能。
  */
 
-import { EventEmitter } from '../events';
-
 // ===== 类型定义 =====
 
 export interface BatchRequest<T = unknown, R = unknown> {
@@ -18,16 +16,15 @@ export interface BatchRequest<T = unknown, R = unknown> {
   reject: (error: Error) => void;
 }
 
-export interface BatchProcessor<T = unknown, R = unknown> {
-  (requests: BatchRequest<T, R>[]): Promise<Map<string, R>>;
-}
+export type BatchProcessor<T = unknown, R = unknown> = (
+  requests: BatchRequest<T, R>[]
+) => Promise<Map<string, R>>;
 
 export interface BatchSchedulerConfig {
   maxBatchSize?: number;
-  maxWaitTime?: number;
+  maxWaitTimeMS?: number;
   minBatchSize?: number;
   priorityThreshold?: number;
-  adaptiveBatching?: boolean;
 }
 
 export interface BatchMetrics {
@@ -36,41 +33,51 @@ export interface BatchMetrics {
   averageBatchSize: number;
   averageWaitTime: number;
   successRate: number;
-  throughput: number; // requests per second
 }
 
-export interface BatchEventMap {
-  batchStart: { batchId: string; requestCount: number };
-  batchComplete: { batchId: string; duration: number; success: boolean };
-  batchError: { batchId: string; error: Error };
-  requestQueued: { requestId: string; queueSize: number };
-  requestTimeout: { requestId: string; waitTime: number };
-  metricsUpdate: { metrics: BatchMetrics };
+export type BatchEventType =
+  | 'batchStart'
+  | 'batchComplete'
+  | 'batchError'
+  | 'requestQueued';
+
+export interface BatchEvent {
+  type: BatchEventType;
+  batchId?: string;
+  requestId?: string;
+  timestamp: number;
+  error?: Error;
 }
 
-// ===== 批处理器 =====
+export type BatchEventHandler = (event: BatchEvent) => void;
 
-export class BatchScheduler<T = unknown, R = unknown> extends EventEmitter<BatchEventMap> {
+// ===== 批调度器 =====
+
+export class BatchScheduler<T = unknown, R = unknown> {
   private queue: BatchRequest<T, R>[] = [];
   private processing = false;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private batchId = 0;
-  private metrics: BatchMetrics;
+  private metrics: BatchMetrics = {
+    totalBatches: 0,
+    totalRequests: 0,
+    averageBatchSize: 0,
+    averageWaitTime: 0,
+    successRate: 1,
+  };
+  private eventHandlers: BatchEventHandler[] = [];
   private readonly config: Required<BatchSchedulerConfig>;
 
   constructor(
     private processor: BatchProcessor<T, R>,
     config: BatchSchedulerConfig = {}
   ) {
-    super();
     this.config = {
       maxBatchSize: config.maxBatchSize ?? 100,
-      maxWaitTime: config.maxWaitTime ?? 50,
+      maxWaitTimeMS: config.maxWaitTimeMS ?? 50,
       minBatchSize: config.minBatchSize ?? 1,
       priorityThreshold: config.priorityThreshold ?? 10,
-      adaptiveBatching: config.adaptiveBatching ?? true,
     };
-    this.metrics = this.createEmptyMetrics();
   }
 
   /**
@@ -88,7 +95,12 @@ export class BatchScheduler<T = unknown, R = unknown> extends EventEmitter<Batch
       };
 
       this.queue.push(request);
-      this.emit('requestQueued', { requestId: request.id, queueSize: this.queue.length });
+
+      this.emitEvent({
+        type: 'requestQueued',
+        requestId: request.id,
+        timestamp: Date.now(),
+      });
 
       this.scheduleProcessing();
     });
@@ -114,7 +126,6 @@ export class BatchScheduler<T = unknown, R = unknown> extends EventEmitter<Batch
       this.timer = null;
     }
 
-    // 拒绝所有待处理的请求
     const error = new Error('Batch scheduler cleared');
     for (const request of this.queue) {
       request.reject(error);
@@ -142,7 +153,30 @@ export class BatchScheduler<T = unknown, R = unknown> extends EventEmitter<Batch
    * 重置统计信息
    */
   resetMetrics(): void {
-    this.metrics = this.createEmptyMetrics();
+    this.metrics = {
+      totalBatches: 0,
+      totalRequests: 0,
+      averageBatchSize: 0,
+      averageWaitTime: 0,
+      successRate: 1,
+    };
+  }
+
+  /**
+   * 添加事件监听器
+   */
+  on(handler: BatchEventHandler): void {
+    this.eventHandlers.push(handler);
+  }
+
+  /**
+   * 移除事件监听器
+   */
+  off(handler: BatchEventHandler): void {
+    const index = this.eventHandlers.indexOf(handler);
+    if (index > -1) {
+      this.eventHandlers.splice(index, 1);
+    }
   }
 
   /**
@@ -150,7 +184,7 @@ export class BatchScheduler<T = unknown, R = unknown> extends EventEmitter<Batch
    */
   destroy(): void {
     this.clear();
-    this.removeAllListeners();
+    this.eventHandlers = [];
   }
 
   // ===== 私有方法 =====
@@ -178,7 +212,7 @@ export class BatchScheduler<T = unknown, R = unknown> extends EventEmitter<Batch
       this.timer = setTimeout(() => {
         this.timer = null;
         this.processBatch();
-      }, this.config.maxWaitTime);
+      }, this.config.maxWaitTimeMS);
     }
   }
 
@@ -192,10 +226,14 @@ export class BatchScheduler<T = unknown, R = unknown> extends EventEmitter<Batch
     const batchSize = Math.min(this.queue.length, this.config.maxBatchSize);
     const batch = this.queue.splice(0, batchSize);
 
-    this.emit('batchStart', { batchId, requestCount: batch.length });
+    this.emitEvent({
+      type: 'batchStart',
+      batchId,
+      timestamp: Date.now(),
+    });
 
     const startTime = performance.now();
-    let success = false;
+    let success = true;
 
     try {
       const results = await this.processor(batch);
@@ -209,20 +247,30 @@ export class BatchScheduler<T = unknown, R = unknown> extends EventEmitter<Batch
           request.reject(new Error(`No result for request ${request.id}`));
         }
       }
-
-      success = true;
     } catch (error) {
-      // 批次处理失败，拒绝所有请求
+      success = false;
       const err = error instanceof Error ? error : new Error(String(error));
+
+      // 拒绝所有请求
       for (const request of batch) {
         request.reject(err);
       }
 
-      this.emit('batchError', { batchId, error: err });
+      this.emitEvent({
+        type: 'batchError',
+        batchId,
+        timestamp: Date.now(),
+        error: err,
+      });
     } finally {
       const duration = performance.now() - startTime;
-      this.updateMetrics(batch.length, duration, success);
-      this.emit('batchComplete', { batchId, duration, success });
+      this.updateMetrics(batchSize, duration, success);
+
+      this.emitEvent({
+        type: 'batchComplete',
+        batchId,
+        timestamp: Date.now(),
+      });
 
       this.processing = false;
 
@@ -235,17 +283,6 @@ export class BatchScheduler<T = unknown, R = unknown> extends EventEmitter<Batch
 
   private generateId(): string {
     return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
-  }
-
-  private createEmptyMetrics(): BatchMetrics {
-    return {
-      totalBatches: 0,
-      totalRequests: 0,
-      averageBatchSize: 0,
-      averageWaitTime: 0,
-      successRate: 1,
-      throughput: 0,
-    };
   }
 
   private updateMetrics(batchSize: number, duration: number, success: boolean): void {
@@ -263,21 +300,23 @@ export class BatchScheduler<T = unknown, R = unknown> extends EventEmitter<Batch
     // 成功率
     const successCount = Math.round(m.successRate * (m.totalBatches - 1)) + (success ? 1 : 0);
     m.successRate = successCount / m.totalBatches;
+  }
 
-    // 吞吐量 (请求/秒)
-    const seconds = duration / 1000;
-    const currentThroughput = seconds > 0 ? batchSize / seconds : 0;
-    m.throughput =
-      (m.throughput * (m.totalBatches - 1) + currentThroughput) / m.totalBatches;
-
-    this.emit('metricsUpdate', { metrics: m });
+  private emitEvent(event: BatchEvent): void {
+    for (const handler of this.eventHandlers) {
+      try {
+        handler(event);
+      } catch (error) {
+        console.error('Error in batch event handler:', error);
+      }
+    }
   }
 }
 
 // ===== 便捷函数 =====
 
 /**
- * 创建批处理器
+ * 创建批调度器
  */
 export function createBatchScheduler<T, R>(
   processor: BatchProcessor<T, R>,
@@ -298,7 +337,9 @@ export function createSimpleBatchScheduler<T, R>(
     const results = await processor(items);
     const map = new Map<string, R>();
     requests.forEach((req, index) => {
-      map.set(req.id, results[index]);
+      if (index < results.length) {
+        map.set(req.id, results[index]);
+      }
     });
     return map;
   };
@@ -310,10 +351,7 @@ export function createSimpleBatchScheduler<T, R>(
 
 export const BatchDefaults = {
   MAX_BATCH_SIZE: 100,
-  MAX_WAIT_TIME: 50,
+  MAX_WAIT_TIME_MS: 50,
   MIN_BATCH_SIZE: 1,
   PRIORITY_THRESHOLD: 10,
 } as const;
-
-// ===== 类型重新导出 =====
-export type { BatchEventMap } from './batch';

@@ -26,6 +26,14 @@ export {
   invalidateCache,
   MemoryCache,
   smartCached,
+  // 增强缓存系统
+  EnhancedMemoryCache,
+  type EnhancedCacheOptions,
+  type CacheStats as EnhancedCacheStats,
+  type CacheEvent,
+  type CacheEventHandler,
+  type CacheEventType,
+  CacheDefaults as EnhancedCacheDefaults,
 } from './cache';
 // 事件系统
 export { EventEmitter, WalletEventManager } from './events';
@@ -53,3 +61,18 @@ export {
   ErrorFactory,
   type ErrorContext,
 } from './errors';
+
+// 批处理系统
+export {
+  BatchScheduler,
+  createBatchScheduler,
+  createSimpleBatchScheduler,
+  BatchDefaults as BatchDefaults,
+  type BatchRequest,
+  type BatchProcessor,
+  type BatchSchedulerConfig,
+  type BatchMetrics,
+  type BatchEvent,
+  type BatchEventHandler,
+  type BatchEventType,
+} from './utils/batch';
