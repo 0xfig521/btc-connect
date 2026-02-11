@@ -118,15 +118,15 @@
   },
   "hotPaths": [
     {
-      "path": "packages/core/src/types/index.ts",
-      "accessCount": 8,
-      "lastAccessed": 1770772820209,
+      "path": "packages/react/src/context/provider.tsx",
+      "accessCount": 10,
+      "lastAccessed": 1770815111082,
       "type": "file"
     },
     {
-      "path": "packages/react/src/context/provider.tsx",
-      "accessCount": 7,
-      "lastAccessed": 1770813284520,
+      "path": "packages/core/src/types/index.ts",
+      "accessCount": 8,
+      "lastAccessed": 1770772820209,
       "type": "file"
     },
     {
@@ -148,6 +148,12 @@
       "type": "file"
     },
     {
+      "path": "packages/core/src/cache/memory-cache.ts",
+      "accessCount": 6,
+      "lastAccessed": 1770814655443,
+      "type": "file"
+    },
+    {
       "path": "",
       "accessCount": 5,
       "lastAccessed": 1770737159246,
@@ -157,12 +163,6 @@
       "path": "packages/react/src/hooks/useWalletManager.ts",
       "accessCount": 5,
       "lastAccessed": 1770737462197,
-      "type": "file"
-    },
-    {
-      "path": "packages/core/src/cache/memory-cache.ts",
-      "accessCount": 5,
-      "lastAccessed": 1770773862179,
       "type": "file"
     },
     {

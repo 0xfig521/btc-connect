@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useReducer,
 } from 'react';
 import type { BalanceDetail, ConnectionPolicy } from '../types';
