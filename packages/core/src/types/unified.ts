@@ -7,15 +7,12 @@
 import type {
   AccountInfo,
   BalanceDetail,
-  BTCWalletAdapter,
-  EventHandler,
-  ModalConfig,
   Network,
-  WalletEvent,
   WalletInfo,
-  WalletManager,
   WalletState,
-} from './index';
+} from './base';
+import type { EventHandler, WalletEvent } from './events';
+import type { BTCWalletAdapter, WalletManager, ModalConfig } from './adapter';
 
 // === 主题相关类型 ===
 
