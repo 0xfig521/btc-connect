@@ -51,6 +51,5 @@ export {
   ErrorSeverity,
   UnifiedError,
   ErrorFactory,
-  ErrorUtils,
   type ErrorContext,
 } from './errors';

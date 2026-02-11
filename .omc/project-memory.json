@@ -154,6 +154,12 @@
       "type": "file"
     },
     {
+      "path": "packages/core/src/index.ts",
+      "accessCount": 6,
+      "lastAccessed": 1770815381943,
+      "type": "file"
+    },
+    {
       "path": "",
       "accessCount": 5,
       "lastAccessed": 1770737159246,
@@ -163,12 +169,6 @@
       "path": "packages/react/src/hooks/useWalletManager.ts",
       "accessCount": 5,
       "lastAccessed": 1770737462197,
-      "type": "file"
-    },
-    {
-      "path": "packages/core/src/index.ts",
-      "accessCount": 4,
-      "lastAccessed": 1770814520503,
       "type": "file"
     },
     {
@@ -187,6 +187,12 @@
       "path": "packages/react/src/index.ts",
       "accessCount": 2,
       "lastAccessed": 1770772727297,
+      "type": "file"
+    },
+    {
+      "path": "packages/core/src/utils/index.ts",
+      "accessCount": 2,
+      "lastAccessed": 1770815252888,
       "type": "file"
     },
     {
@@ -289,12 +295,6 @@
       "path": "packages/vue/src/components/ConnectButton.vue",
       "accessCount": 1,
       "lastAccessed": 1770737167739,
-      "type": "file"
-    },
-    {
-      "path": "packages/core/src/utils/index.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737168920,
       "type": "file"
     },
     {
