@@ -1,6 +1,6 @@
 {
   "name": "@btc-connect/vue",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Vue adapter for btc-connect - Composables, Plugin, and Components for Bitcoin wallet connection",
   "type": "module",
   "main": "dist/index.js",

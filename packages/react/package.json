@@ -1,6 +1,6 @@
 {
   "name": "@btc-connect/react",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "React adapter for btc-connect - Hooks, Provider, and Components for Bitcoin wallet connection",
   "type": "module",
   "main": "dist/index.js",
