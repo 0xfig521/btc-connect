@@ -1,0 +1,68 @@
+{
+  "active_plan": "/Users/icehugh/workspace/btc-connect/.sisyphus/plans/hook-optimization.md",
+  "started_at": "2026-05-10T02:15:22.611Z",
+  "session_ids": [
+    "ses_1f06b9382ffesqxyqRiifGaVDI"
+  ],
+  "plan_name": "hook-optimization",
+  "worktree_path": null,
+  "session_origins": {
+    "ses_1f06b9382ffesqxyqRiifGaVDI": "direct"
+  },
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "为 useWalletModal 编写测试",
+      "session_id": "ses_1f053e548ffe4tnaoYSUaJXMBQ",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-10T02:20:21.971Z"
+    },
+    "todo:5": {
+      "task_key": "todo:5",
+      "task_label": "5",
+      "task_title": "删除 useAddress/usePublicKey/useConnectionStatus 实现",
+      "session_id": "ses_1f04ae6abffeAGh4oPYIX2dlOy",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-10T02:26:55.734Z"
+    },
+    "todo:8": {
+      "task_key": "todo:8",
+      "task_label": "8",
+      "task_title": "合并 useWalletModalEnhanced 到 useWalletModal",
+      "session_id": "ses_1f0498219ffeBDM9ScMnqNJ55W",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-05-10T02:31:33.122Z"
+    },
+    "todo:9": {
+      "task_key": "todo:9",
+      "task_label": "9",
+      "task_title": "更新 examples 使用新的 useWalletModal",
+      "session_id": "ses_1f03c353bffeDJ5pzUBqx8oEob",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-10T02:53:55.425Z"
+    },
+    "todo:10": {
+      "task_key": "todo:10",
+      "task_label": "10",
+      "task_title": "更新测试以匹配新的 API",
+      "session_id": "ses_1f02dd528ffe9cI1XWZa1P88hC",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-10T02:59:07.845Z"
+    },
+    "final-wave:f4": {
+      "task_key": "final-wave:f4",
+      "task_label": "F4",
+      "task_title": "功能验证",
+      "session_id": "ses_1f02baf05ffekyFSiqnLmXazT9",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-10T03:09:09.748Z"
+    }
+  }
+}

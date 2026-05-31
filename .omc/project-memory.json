@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1770736878952,
+  "lastScanned": 1770824433654,
   "projectRoot": "/Users/icehugh/workspace/btc-connect",
   "techStack": {
     "languages": [
@@ -74,7 +74,7 @@
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 3,
-      "lastAccessed": 1770736878898,
+      "lastAccessed": 1770824433597,
       "keyFiles": [
         "api.md",
         "nextjs.md",
@@ -85,7 +85,7 @@
       "path": "examples",
       "purpose": "Example code",
       "fileCount": 1,
-      "lastAccessed": 1770736878898,
+      "lastAccessed": 1770824433598,
       "keyFiles": [
         "README.md"
       ]
@@ -94,14 +94,14 @@
       "path": "packages",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1770736878903,
+      "lastAccessed": 1770824433602,
       "keyFiles": []
     },
     "scripts": {
       "path": "scripts",
       "purpose": "Build/utility scripts",
       "fileCount": 3,
-      "lastAccessed": 1770736878904,
+      "lastAccessed": 1770824433602,
       "keyFiles": [
         "README.md",
         "update-version.js",
@@ -112,311 +112,10 @@
       "path": "skill",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1770736878904,
+      "lastAccessed": 1770824433602,
       "keyFiles": []
     }
   },
-  "hotPaths": [
-    {
-      "path": "packages/react/src/context/provider.tsx",
-      "accessCount": 10,
-      "lastAccessed": 1770815111082,
-      "type": "file"
-    },
-    {
-      "path": "packages/core/src/index.ts",
-      "accessCount": 10,
-      "lastAccessed": 1770816155959,
-      "type": "file"
-    },
-    {
-      "path": "packages/core/src/types/index.ts",
-      "accessCount": 8,
-      "lastAccessed": 1770772820209,
-      "type": "file"
-    },
-    {
-      "path": "packages/core/src/cache/memory-cache.ts",
-      "accessCount": 7,
-      "lastAccessed": 1770815969784,
-      "type": "file"
-    },
-    {
-      "path": "packages/core/src/managers/index.ts",
-      "accessCount": 6,
-      "lastAccessed": 1770737434264,
-      "type": "file"
-    },
-    {
-      "path": "packages/vue/src/composables/useWallet.ts",
-      "accessCount": 6,
-      "lastAccessed": 1770737489200,
-      "type": "file"
-    },
-    {
-      "path": "packages/core/src/types/unified.ts",
-      "accessCount": 6,
-      "lastAccessed": 1770773333656,
-      "type": "file"
-    },
-    {
-      "path": "",
-      "accessCount": 5,
-      "lastAccessed": 1770737159246,
-      "type": "directory"
-    },
-    {
-      "path": "packages/react/src/hooks/useWalletManager.ts",
-      "accessCount": 5,
-      "lastAccessed": 1770737462197,
-      "type": "file"
-    },
-    {
-      "path": "packages/core/src/cache/index.ts",
-      "accessCount": 3,
-      "lastAccessed": 1770816067641,
-      "type": "file"
-    },
-    {
-      "path": "packages/core/src/adapters/base.ts",
-      "accessCount": 2,
-      "lastAccessed": 1770737187341,
-      "type": "file"
-    },
-    {
-      "path": "packages/core/src/adapters/okx.ts",
-      "accessCount": 2,
-      "lastAccessed": 1770737227000,
-      "type": "file"
-    },
-    {
-      "path": "packages/react/src/index.ts",
-      "accessCount": 2,
-      "lastAccessed": 1770772727297,
-      "type": "file"
-    },
-    {
-      "path": "packages/core/src/utils/index.ts",
-      "accessCount": 2,
-      "lastAccessed": 1770815252888,
-      "type": "file"
-    },
-    {
-      "path": "packages/core/src/events/index.ts",
-      "accessCount": 2,
-      "lastAccessed": 1770815618680,
-      "type": "file"
-    },
-    {
-      "path": "packages/react/src/context/reducer.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737134780,
-      "type": "file"
-    },
-    {
-      "path": "packages/react/src/hooks/index.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737143284,
-      "type": "file"
-    },
-    {
-      "path": "packages/react/src/hooks/hooks.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1770737144513,
-      "type": "file"
-    },
-    {
-      "path": "packages/react/src/types/index.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737145751,
-      "type": "file"
-    },
-    {
-      "path": "packages/vue/src/index.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737148300,
-      "type": "file"
-    },
-    {
-      "path": "packages/vue/src/walletContext.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737149509,
-      "type": "file"
-    },
-    {
-      "path": "packages/vue/src/composables/useNetwork.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737151810,
-      "type": "file"
-    },
-    {
-      "path": "packages/react/src/components/ConnectButton.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1770737154563,
-      "type": "file"
-    },
-    {
-      "path": "packages/react/src/utils/index.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737155690,
-      "type": "file"
-    },
-    {
-      "path": "packages/react/src/hooks/useAutoConnect.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737158365,
-      "type": "file"
-    },
-    {
-      "path": "packages/vue/src/composables/useWalletManager.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737164634,
-      "type": "file"
-    },
-    {
-      "path": "packages/core/src/adapters/index.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737165025,
-      "type": "file"
-    },
-    {
-      "path": "packages/vue/src/composables/useWalletEvent.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737165737,
-      "type": "file"
-    },
-    {
-      "path": "packages/vue/src/composables/useAccount.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737166838,
-      "type": "file"
-    },
-    {
-      "path": "packages/vue/src/components/ConnectButton.vue",
-      "accessCount": 1,
-      "lastAccessed": 1770737167739,
-      "type": "file"
-    },
-    {
-      "path": "packages/react/src/hooks/useTransactions.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737169575,
-      "type": "file"
-    },
-    {
-      "path": "packages/core/src/utils/error-handler.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737169896,
-      "type": "file"
-    },
-    {
-      "path": "packages/react/src/hooks/useWalletDetection.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737170861,
-      "type": "file"
-    },
-    {
-      "path": "packages/react/src/types/shared.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737171954,
-      "type": "file"
-    },
-    {
-      "path": "packages/react/src/__tests__/hooks-simple.test.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1770737173039,
-      "type": "file"
-    },
-    {
-      "path": "packages/vue/src/composables/useCore.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737176889,
-      "type": "file"
-    },
-    {
-      "path": "packages/vue/src/types/index.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737178024,
-      "type": "file"
-    },
-    {
-      "path": "packages/vue/src/composables/useTransactions.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737178929,
-      "type": "file"
-    },
-    {
-      "path": "examples/nextjs/src/app/page.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1770737185066,
-      "type": "file"
-    },
-    {
-      "path": "examples/nextjs/src/app/layout.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1770737186655,
-      "type": "file"
-    },
-    {
-      "path": "packages/core/src/adapters/unisat.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737194438,
-      "type": "file"
-    },
-    {
-      "path": "examples/nextjs/src/components/SSRWalletProvider.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1770737204448,
-      "type": "file"
-    },
-    {
-      "path": "examples/nextjs/src/components/WalletTestSuite.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1770737205719,
-      "type": "file"
-    },
-    {
-      "path": "examples/nextjs/src/components/WalletConnectDemo.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1770737207087,
-      "type": "file"
-    },
-    {
-      "path": "examples/nextjs/package.json",
-      "accessCount": 1,
-      "lastAccessed": 1770737208232,
-      "type": "file"
-    },
-    {
-      "path": "examples/nextjs/next.config.js",
-      "accessCount": 1,
-      "lastAccessed": 1770737209197,
-      "type": "file"
-    },
-    {
-      "path": "examples/nuxt-example/components/WalletTestSuite.vue",
-      "accessCount": 1,
-      "lastAccessed": 1770737216586,
-      "type": "file"
-    },
-    {
-      "path": "examples/nuxt-example/plugins/btc-connect.client.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737217931,
-      "type": "file"
-    },
-    {
-      "path": "examples/nuxt-example/nuxt.config.ts",
-      "accessCount": 1,
-      "lastAccessed": 1770737219119,
-      "type": "file"
-    },
-    {
-      "path": "examples/nuxt-example/package.json",
-      "accessCount": 1,
-      "lastAccessed": 1770737219983,
-      "type": "file"
-    }
-  ],
+  "hotPaths": [],
   "userDirectives": []
 }

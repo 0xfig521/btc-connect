@@ -25,7 +25,28 @@ import {
 import { WalletErrorHandler } from '../utils/error-handler';
 
 /**
- * 钱包适配器基类
+ * Abstract base class for Bitcoin wallet adapters.
+ * Provides common functionality for wallet connection, state management, caching, and event handling.
+ * All concrete wallet adapters (UniSat, OKX, Xverse) must extend this class.
+ *
+ * @example
+ * ```typescript
+ * class MyWalletAdapter extends BaseWalletAdapter {
+ *   readonly id = 'mywallet';
+ *   readonly name = 'My Wallet';
+ *   readonly icon = 'https://example.com/icon.png';
+ *
+ *   protected getWalletInstance() {
+ *     return window.mywallet;
+ *   }
+ *
+ *   protected async handleConnect() {
+ *     const addresses = await window.mywallet.requestAccounts();
+ *     return this.createAccountInfos(addresses);
+ *   }
+ *   // ... implement other abstract methods
+ * }
+ * ```
  */
 export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   protected eventManager: WalletEventManager = new WalletEventManager();
@@ -78,12 +99,31 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 获取钱包实例，子类必须实现
+   * Gets the wallet instance from the global scope.
+   * Subclasses must implement this to return their specific wallet provider.
+   *
+   * @returns The wallet instance if available, undefined otherwise
+   *
+   * @example
+   * ```typescript
+   * protected getWalletInstance() {
+   *   return typeof window !== 'undefined' ? window.unisat : undefined;
+   * }
+   * ```
    */
   protected abstract getWalletInstance(): any;
 
   /**
-   * 检查钱包是否可用
+   * Checks if the wallet is available in the current environment.
+   * Throws an error if the wallet is not installed or not accessible.
+   *
+   * @throws {Error} If the wallet is not found
+   *
+   * @example
+   * ```typescript
+   * this.checkWalletAvailability(); // Throws if wallet not installed
+   * const wallet = this.getWalletInstance(); // Safe to use after check
+   * ```
    */
   protected checkWalletAvailability(): void {
     if (!this.getWalletInstance()) {
@@ -92,7 +132,18 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 标准化网络字符串
+   * Normalizes network string to standard Network type.
+   * Handles various wallet-specific network naming conventions.
+   *
+   * @param network - The network string from the wallet (e.g., 'livenet', 'mainnet', 'testnet')
+   * @returns The normalized Network type
+   *
+   * @example
+   * ```typescript
+   * this.normalizeNetwork('livenet');  // Returns 'mainnet'
+   * this.normalizeNetwork('testnet');  // Returns 'testnet'
+   * this.normalizeNetwork('unknown');  // Returns 'mainnet' (default)
+   * ```
    */
   protected normalizeNetwork(network: string): Network {
     switch (network) {
@@ -109,7 +160,21 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 创建账户信息
+   * Creates an AccountInfo object from wallet data.
+   *
+   * @param address - The Bitcoin address
+   * @param publicKey - Optional public key associated with the address
+   * @param network - Optional network the address belongs to
+   * @returns A structured AccountInfo object
+   *
+   * @example
+   * ```typescript
+   * const account = this.createAccountInfo(
+   *   'tb1q...',
+   *   '02abc...',
+   *   'testnet'
+   * );
+   * ```
    */
   protected createAccountInfo(
     address: string,
@@ -125,14 +190,32 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 获取当前地址（用于缓存键）
+   * Gets the current connected address for cache key generation.
+   *
+   * @returns The current address if connected, null otherwise
+   *
+   * @example
+   * ```typescript
+   * const address = this.getCurrentAddress();
+   * if (address) {
+   *   const cacheKey = `balance:${this.id}:${address}`;
+   * }
+   * ```
    */
   protected getCurrentAddress(): string | null {
     return this.state.currentAccount?.address || null;
   }
 
   /**
-   * 清除指定类型的缓存
+   * Clears cache for a specific type or all caches.
+   *
+   * @param type - The cache type to clear: 'balance', 'network', 'accounts', 'publicKey', or 'all'
+   *
+   * @example
+   * ```typescript
+   * this.clearCache('balance');  // Clear only balance cache
+   * this.clearCache('all');      // Clear all caches
+   * ```
    */
   protected clearCache(
     type: 'balance' | 'network' | 'accounts' | 'publicKey' | 'all',
@@ -160,7 +243,14 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 清除与当前账户相关的缓存
+   * Clears cache entries related to the current account.
+   * Called when account changes to ensure fresh data.
+   *
+   * @example
+   * ```typescript
+   * // Called internally when account changes
+   * this.clearCurrentAccountCache();
+   * ```
    */
   protected clearCurrentAccountCache(): void {
     const currentAddress = this.getCurrentAddress();
@@ -176,14 +266,32 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 清除钱包所有缓存
+   * Clears all caches associated with this wallet adapter.
+   *
+   * @example
+   * ```typescript
+   * // Called on disconnect or destroy
+   * this.clearWalletCache();
+   * ```
    */
   protected clearWalletCache(): void {
     this.clearCache('all');
   }
 
   /**
-   * 批量创建账户信息
+   * Creates multiple AccountInfo objects from an array of addresses.
+   *
+   * @param addresses - Array of Bitcoin addresses
+   * @param network - Optional network for all accounts
+   * @returns Array of AccountInfo objects
+   *
+   * @example
+   * ```typescript
+   * const accounts = this.createAccountInfos(
+   *   ['tb1qabc...', 'tb1qdef...'],
+   *   'testnet'
+   * );
+   * ```
    */
   protected createAccountInfos(
     addresses: string[],
@@ -195,7 +303,24 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 安全执行钱包操作
+   * Safely executes a wallet operation with error handling.
+   * Wraps wallet-specific operations and provides consistent error handling.
+   *
+   * @template T - The return type of the operation
+   * @param operation - The async function to execute with the wallet instance
+   * @param _operationName - Name of the operation for error context
+   * @param _context - Additional error context information
+   * @returns The result of the operation
+   * @throws The original wallet error if operation fails
+   *
+   * @example
+   * ```typescript
+   * const result = await this.executeWalletOperation(
+   *   async (wallet) => await wallet.getBalance(),
+   *   'getBalance',
+   *   { walletId: this.id }
+   * );
+   * ```
    */
   protected async executeWalletOperation<T>(
     operation: (wallet: any) => Promise<T>,
@@ -208,7 +333,17 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 设置事件监听器的通用逻辑
+   * Sets up wallet event listeners using a mapping of events to handlers.
+   *
+   * @param eventMap - Object mapping event names to handler functions
+   *
+   * @example
+   * ```typescript
+   * this.setupWalletEventListeners({
+   *   accountsChanged: this.handleAccountsChanged,
+   *   networkChanged: this.handleNetworkChanged
+   * });
+   * ```
    */
   protected setupWalletEventListeners(
     eventMap: Record<string, (...args: any[]) => void>,
@@ -222,7 +357,17 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 移除事件监听器的通用逻辑
+   * Removes wallet event listeners that were previously registered.
+   *
+   * @param eventMap - Object mapping event names to handler functions to remove
+   *
+   * @example
+   * ```typescript
+   * this.removeWalletEventListeners({
+   *   accountsChanged: this.handleAccountsChanged,
+   *   networkChanged: this.handleNetworkChanged
+   * });
+   * ```
    */
   protected removeWalletEventListeners(
     eventMap: Record<string, (...args: any[]) => void>,
@@ -236,21 +381,58 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 检查钱包是否可用
+   * Checks if the wallet is ready for use.
+   * Verifies that the code is running in a browser environment and the wallet is installed.
+   *
+   * @returns True if the wallet is available, false otherwise
+   *
+   * @example
+   * ```typescript
+   * if (adapter.isReady()) {
+   *   await adapter.connect();
+   * } else {
+   *   console.log('Please install the wallet');
+   * }
+   * ```
    */
   isReady(): boolean {
     return typeof window !== 'undefined' && !!this.getWalletInstance();
   }
 
   /**
-   * 获取当前状态
+   * Gets the current wallet state including connection status, accounts, and network.
+   *
+   * @returns A copy of the current wallet state
+   *
+   * @example
+   * ```typescript
+   * const state = adapter.getState();
+   * console.log(state.status);     // 'connected' | 'disconnected' | ...
+   * console.log(state.accounts);   // AccountInfo[]
+   * console.log(state.network);    // 'mainnet' | 'testnet'
+   * ```
    */
   getState(): WalletState {
     return { ...this.state };
   }
 
   /**
-   * 连接钱包
+   * Connects to the wallet and requests account access.
+   * Emits a connect event on successful connection.
+   *
+   * @returns Array of connected account information
+   * @throws {WalletNotInstalledError} If the wallet is not installed
+   * @throws {Error} If the user rejects the connection request
+   *
+   * @example
+   * ```typescript
+   * try {
+   *   const accounts = await adapter.connect();
+   *   console.log('Connected:', accounts[0].address);
+   * } catch (error) {
+   *   console.error('Connection failed:', error);
+   * }
+   * ```
    */
   async connect(): Promise<AccountInfo[]> {
     if (this.isConnected) {
@@ -283,7 +465,16 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 断开连接
+   * Disconnects from the wallet and clears the connection state.
+   * Emits a disconnect event on successful disconnection.
+   *
+   * @throws {Error} If disconnection fails
+   *
+   * @example
+   * ```typescript
+   * await adapter.disconnect();
+   * console.log('Disconnected');
+   * ```
    */
   async disconnect(): Promise<void> {
     if (!this.isConnected) {
@@ -311,7 +502,16 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 获取账户列表
+   * Gets the list of accounts from the wallet without requiring connection.
+   * Useful for silent account detection.
+   *
+   * @returns Array of account information
+   *
+   * @example
+   * ```typescript
+   * const accounts = await adapter.getAccounts();
+   * console.log('Available accounts:', accounts.length);
+   * ```
    */
   async getAccounts(): Promise<AccountInfo[]> {
     // 放开静默探测：未连接也允许调用底层 API 获取账户
@@ -319,7 +519,17 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 请求连接账户 - 类似于 MetaMask 的 requestAccounts
+   * Requests account connection, similar to MetaMask's requestAccounts.
+   * Falls back to connect() if the wallet doesn't support requestAccounts.
+   *
+   * @returns Array of connected account information
+   * @throws {WalletNotInstalledError} If the wallet is not installed
+   *
+   * @example
+   * ```typescript
+   * const accounts = await adapter.requestAccounts();
+   * console.log('Connected accounts:', accounts);
+   * ```
    */
   async requestAccounts(): Promise<AccountInfo[]> {
     if (!this.isReady()) {
@@ -335,7 +545,18 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 获取公钥
+   * Gets the public key for the current account.
+   * Results are cached for performance.
+   *
+   * @returns The public key as a hex string
+   * @throws {WalletDisconnectedError} If not connected
+   * @throws {Error} If the wallet doesn't support getPublicKey
+   *
+   * @example
+   * ```typescript
+   * const publicKey = await adapter.getPublicKey();
+   * console.log('Public key:', publicKey);
+   * ```
    */
   async getPublicKey(): Promise<string> {
     if (!this.isConnected) {
@@ -365,7 +586,19 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 获取余额
+   * Gets the balance for the current account.
+   * Results are cached for performance.
+   *
+   * @returns Balance information including confirmed, unconfirmed, and total balance
+   * @throws {WalletDisconnectedError} If not connected
+   * @throws {Error} If the wallet doesn't support getBalance
+   *
+   * @example
+   * ```typescript
+   * const balance = await adapter.getBalance();
+   * console.log('Total balance:', balance.total);
+   * console.log('Confirmed:', balance.confirmed);
+   * ```
    */
   async getBalance(): Promise<BalanceInfo> {
     if (!this.isConnected) {
@@ -400,7 +633,20 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 高级签名消息（支持多种签名类型）
+   * Signs a message with advanced options including signature type.
+   * Falls back to basic signMessage() if not supported by the wallet.
+   *
+   * @param message - The message to sign
+   * @param options - Signing options including signature type (ecdsa, bip322-simple)
+   * @returns The signature as a hex string
+   * @throws {WalletDisconnectedError} If not connected
+   *
+   * @example
+   * ```typescript
+   * const signature = await adapter.signMessageAdvanced('Hello', {
+   *   type: 'bip322-simple'
+   * });
+   * ```
    */
   async signMessageAdvanced(
     message: string,
@@ -419,7 +665,23 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 发送比特币（支持选项）
+   * Sends Bitcoin with advanced options including fee rate and memo.
+   * Falls back to basic sendBitcoin() if not supported by the wallet.
+   *
+   * @param toAddress - The recipient Bitcoin address
+   * @param amount - The amount to send in satoshis
+   * @param options - Transaction options including feeRate and memo
+   * @returns The transaction ID
+   * @throws {WalletDisconnectedError} If not connected
+   *
+   * @example
+   * ```typescript
+   * const txId = await adapter.sendBitcoinAdvanced(
+   *   'tb1q...',
+   *   10000,
+   *   { feeRate: 10, memo: 'Payment' }
+   * );
+   * ```
    */
   async sendBitcoinAdvanced(
     toAddress: string,
@@ -439,7 +701,23 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 发送铭文
+   * Sends an inscription to a specified address.
+   *
+   * @param address - The recipient address
+   * @param inscriptionId - The inscription ID to send
+   * @param options - Transaction options including feeRate
+   * @returns The transaction ID
+   * @throws {WalletDisconnectedError} If not connected
+   * @throws {Error} If the wallet doesn't support sendInscription
+   *
+   * @example
+   * ```typescript
+   * const txId = await adapter.sendInscription(
+   *   'tb1q...',
+   *   'abc123...',
+   *   { feeRate: 5 }
+   * );
+   * ```
    */
   async sendInscription(
     address: string,
@@ -458,7 +736,17 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 推送交易
+   * Pushes a raw transaction to the network.
+   *
+   * @param options - Options containing the raw transaction hex
+   * @returns The transaction ID
+   * @throws {WalletDisconnectedError} If not connected
+   * @throws {Error} If the wallet doesn't support pushTx
+   *
+   * @example
+   * ```typescript
+   * const txId = await adapter.pushTx({ rawTx: '020000...' });
+   * ```
    */
   async pushTx(options: PushTxOptions): Promise<string> {
     if (!this.isConnected) {
@@ -473,7 +761,19 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 获取铭文列表
+   * Gets inscriptions owned by the current account.
+   *
+   * @param options - Pagination options including cursor and size
+   * @returns Inscriptions response with total count and list
+   * @throws {WalletDisconnectedError} If not connected
+   * @throws {Error} If the wallet doesn't support getInscriptions
+   *
+   * @example
+   * ```typescript
+   * const result = await adapter.getInscriptions({ cursor: 0, size: 10 });
+   * console.log('Total inscriptions:', result.total);
+   * result.list.forEach(ins => console.log(ins.inscriptionId));
+   * ```
    */
   async getInscriptions(
     options?: GetInscriptionsOptions,
@@ -490,7 +790,17 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 获取当前账户
+   * Gets the currently active account.
+   *
+   * @returns The current account info, or null if not connected
+   *
+   * @example
+   * ```typescript
+   * const account = await adapter.getCurrentAccount();
+   * if (account) {
+   *   console.log('Current address:', account.address);
+   * }
+   * ```
    */
   async getCurrentAccount(): Promise<AccountInfo | null> {
     if (!this.isConnected) {
@@ -500,7 +810,16 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 获取网络信息
+   * Gets the current network the wallet is connected to.
+   * Results are cached for performance.
+   *
+   * @returns The current network (mainnet, testnet, or regtest)
+   *
+   * @example
+   * ```typescript
+   * const network = await adapter.getNetwork();
+   * console.log('Current network:', network); // 'mainnet' | 'testnet'
+   * ```
    */
   async getNetwork(): Promise<Network> {
     // 放开静默探测：未连接也允许调用底层 API 获取网络
@@ -524,7 +843,17 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 切换网络
+   * Switches the wallet to a different network.
+   * Clears relevant caches after switching.
+   *
+   * @param network - The target network to switch to
+   * @throws {WalletDisconnectedError} If not connected
+   *
+   * @example
+   * ```typescript
+   * await adapter.switchNetwork('testnet');
+   * console.log('Switched to testnet');
+   * ```
    */
   async switchNetwork(network: Network): Promise<void> {
     if (!this.isConnected) {
@@ -548,7 +877,17 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 签名消息
+   * Signs a message using the connected account.
+   *
+   * @param message - The message to sign
+   * @returns The signature as a hex string
+   * @throws {WalletDisconnectedError} If not connected
+   *
+   * @example
+   * ```typescript
+   * const signature = await adapter.signMessage('Hello World');
+   * console.log('Signature:', signature);
+   * ```
    */
   async signMessage(message: string): Promise<string> {
     if (!this.isConnected) {
@@ -558,7 +897,17 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 签名PSBT
+   * Signs a Partially Signed Bitcoin Transaction (PSBT).
+   *
+   * @param psbt - The PSBT hex string to sign
+   * @returns The signed PSBT hex string
+   * @throws {WalletDisconnectedError} If not connected
+   *
+   * @example
+   * ```typescript
+   * const signedPsbt = await adapter.signPsbt('70736274...');
+   * console.log('Signed PSBT:', signedPsbt);
+   * ```
    */
   async signPsbt(psbt: string): Promise<string> {
     if (!this.isConnected) {
@@ -568,7 +917,18 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 发送比特币
+   * Sends Bitcoin to a specified address.
+   *
+   * @param toAddress - The recipient Bitcoin address
+   * @param amount - The amount to send in satoshis
+   * @returns The transaction ID
+   * @throws {WalletDisconnectedError} If not connected
+   *
+   * @example
+   * ```typescript
+   * const txId = await adapter.sendBitcoin('tb1q...', 10000);
+   * console.log('Transaction ID:', txId);
+   * ```
    */
   async sendBitcoin(toAddress: string, amount: number): Promise<string> {
     if (!this.isConnected) {
@@ -578,21 +938,48 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 添加事件监听器
+   * Registers an event listener for wallet events.
+   *
+   * @template T - The event type
+   * @param event - The event name to listen for
+   * @param handler - The callback function to execute when the event fires
+   *
+   * @example
+   * ```typescript
+   * adapter.on('accountChanged', (accounts) => {
+   *   console.log('Account changed:', accounts);
+   * });
+   * adapter.on('networkChanged', (network) => {
+   *   console.log('Network changed:', network);
+   * });
+   * ```
    */
   on<T extends WalletEvent>(event: T, handler: EventHandler<T>): void {
     this.eventManager.on(event, handler);
   }
 
   /**
-   * 移除事件监听器
+   * Removes a previously registered event listener.
+   *
+   * @template T - The event type
+   * @param event - The event name
+   * @param handler - The callback function to remove
+   *
+   * @example
+   * ```typescript
+   * const handler = (accounts) => console.log(accounts);
+   * adapter.on('accountChanged', handler);
+   * // Later, remove the listener
+   * adapter.off('accountChanged', handler);
+   * ```
    */
   off<T extends WalletEvent>(event: T, handler: EventHandler<T>): void {
     this.eventManager.off(event, handler);
   }
 
   /**
-   * 子类需要实现的抽象方法
+   * Abstract methods that subclasses must implement.
+   * These handle the wallet-specific implementation details.
    */
   protected abstract handleConnect(): Promise<AccountInfo[]>;
   protected abstract handleDisconnect(): Promise<void>;
@@ -607,7 +994,8 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   ): Promise<string>;
 
   /**
-   * 可选的高级方法 - 子类可以根据需要实现
+   * Optional advanced methods that subclasses can implement.
+   * These provide extended functionality for wallets that support them.
    */
   protected handleRequestAccounts?(): Promise<AccountInfo[]>;
   protected handleGetPublicKey?(): Promise<string>;
@@ -632,7 +1020,10 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   ): Promise<InscriptionsResponse>;
 
   /**
-   * 更新账户信息
+   * Updates the account list and emits an account change event.
+   * Clears relevant caches when accounts change.
+   *
+   * @param accounts - The new list of accounts
    */
   protected updateAccounts(accounts: AccountInfo[]): void {
     this.state.accounts = accounts;
@@ -648,7 +1039,10 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 更新网络信息
+   * Updates the network and emits a network change event.
+   * Clears relevant caches when network changes.
+   *
+   * @param network - The new network
    */
   protected updateNetwork(network: Network): void {
     this.state.network = network;
@@ -664,7 +1058,14 @@ export abstract class BaseWalletAdapter implements BTCWalletAdapter {
   }
 
   /**
-   * 清理资源
+   * Cleans up resources and resets the adapter state.
+   * Should be called when the adapter is no longer needed.
+   *
+   * @example
+   * ```typescript
+   * // Clean up when component unmounts
+   * adapter.destroy();
+   * ```
    */
   destroy(): void {
     this.eventManager.destroy();

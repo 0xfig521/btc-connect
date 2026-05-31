@@ -64,7 +64,29 @@ interface WalletProviderProps {
 }
 
 /**
- * 钱包提供者组件 - 使用 useReducer 优化
+ * Bitcoin wallet provider component.
+ * Root provider that manages wallet state and provides it to the application tree.
+ *
+ * @param props - Provider props
+ * @param props.children - Child components
+ * @param props.config - Core manager configuration
+ * @param props.autoConnect - Enable auto-connection (default: false)
+ * @param props.connectTimeout - Connection timeout in ms (default: 5000)
+ * @param props.connectionPolicy - Custom connection strategy
+ * @param props.modalConfig - Modal configuration
+ *
+ * @example
+ * ```tsx
+ * import { BTCWalletProvider, ConnectButton } from '@btc-connect/react';
+ *
+ * function App() {
+ *   return (
+ *     <BTCWalletProvider autoConnect={true}>
+ *       <ConnectButton />
+ *     </BTCWalletProvider>
+ *   );
+ * }
+ * ```
  */
 export function BTCWalletProvider({
   children,
@@ -556,7 +578,21 @@ export function BTCWalletProvider({
 }
 
 /**
- * 使用钱包上下文的Hook
+ * Hook to access wallet context.
+ * Must be used within a BTCWalletProvider.
+ *
+ * @returns Wallet context with state and methods
+ * @throws Error if used outside of BTCWalletProvider
+ *
+ * @example
+ * ```tsx
+ * import { useWalletContext } from '@btc-connect/react';
+ *
+ * function MyComponent() {
+ *   const { state, connect, disconnect } = useWalletContext();
+ *   return <div>Status: {state.status}</div>;
+ * }
+ * ```
  */
 export function useWalletContext(): WalletContextType {
   const context = useContext(WalletContext);

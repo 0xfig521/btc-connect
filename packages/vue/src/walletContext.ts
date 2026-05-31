@@ -12,7 +12,12 @@ import type { App } from 'vue';
 import { type ComputedRef, computed, inject, nextTick, type Ref, ref } from 'vue';
 import { storage, WalletDetectionManager } from './utils';
 
-// 定义 Context 类型
+/**
+ * Wallet context interface
+ *
+ * Provides access to wallet manager, state, and operations.
+ * This is the core context used by all wallet composables.
+ */
 export interface WalletContext {
   manager: Ref<BTCWalletManager | null>;
   state: ComputedRef<WalletState>;
@@ -45,266 +50,30 @@ export interface WalletContext {
   _stateUpdateTrigger: Ref<number>;
 }
 
-// 注入键 - 使用 Symbol 确保唯一性
+// Injection key - use Symbol for uniqueness
 const BTC_WALLET_CONTEXT_KEY = Symbol('btc-wallet-context');
 
-// 为了向后兼容，保留全局状态（但不再推荐使用）
+// For backward compatibility, keep global state (but no longer recommended)
 let globalContext: WalletContext | null = null;
 
-// 创建钱包上下文
-// createWalletContext 不再对外导出，只保留一个 useWalletContext
-// 移除此函数的导出以简化 API，仅保留内部实现供插件使用
-function createWalletContext(): WalletContext {
-  // SSR 保护：只在客户端初始化 manager
-  const manager = ref<BTCWalletManager | null>(null);
-
-  // 模态框状态
-  const isModalOpen = ref(false);
-
-  // 连接状态
-  const isConnectingValue = ref(false);
-
-  // 可用钱包列表
-  const availableWallets = ref<WalletInfo[]>([]);
-
-  // 钱包检测管理器
-  const detectionManager = ref<WalletDetectionManager | null>(null);
-
-  // 添加一个强制更新的trigger
-  const stateUpdateTrigger = ref(0);
-
-  // 计算属性 - 依赖trigger来强制更新
-  const state = computed(() => {
-    // 依赖trigger确保状态变化时能重新计算
-    stateUpdateTrigger.value;
-
-    const managerState = manager.value?.getState() || {
-      status: 'disconnected' as ConnectionStatus,
-      accounts: [],
-      currentAccount: undefined,
-      network: 'livenet' as Network,
-      error: undefined,
-    };
-
-    // 🔧 增强响应式更新：强制检查管理器状态变化
-    if (manager.value) {
-      const currentState = manager.value.getState();
-      console.log('🧪 [BTC-Connect:Vue] State computed re-evaluated:', currentState.status);
-      // 确保状态是最新值，避免缓存问题
-      return currentState;
-    }
-
-    return managerState;
-  });
-
-  const currentWallet = computed(
-    () => manager.value?.getCurrentWallet() || null,
-  );
-  const isConnected = computed(() => state.value.status === 'connected');
-  const isConnecting = computed(
-    () => isConnectingValue.value || state.value.status === 'connecting',
-  );
-  const isDetecting = computed(
-    () => detectionManager.value?.isActive() || false,
-  );
-
-  // 连接方法
-  const connect = async (walletId: string): Promise<AccountInfo[]> => {
-    if (!manager.value) {
-      throw new Error('Wallet manager not initialized');
-    }
-
-    try {
-      isConnectingValue.value = true;
-      const accounts = await manager.value.connect(walletId);
-
-      // 使用storage工具保存连接的钱包ID（与React包保持一致）
-      if (accounts.length > 0) {
-        storage.set('btc-connect:last-wallet-id', walletId);
-        console.log(`💾 [walletContext] Saved wallet ID: ${walletId}`);
-      }
-
-      // 强制触发状态重新计算
-      setTimeout(() => {
-        // 延迟检查状态
-      }, 100);
-
-      return accounts;
-    } catch (error) {
-      console.error('❌ [walletContext] Failed to connect wallet:', error);
-      throw error;
-    } finally {
-      isConnectingValue.value = false;
-    }
-  };
-
-  const disconnect = async (): Promise<void> => {
-    if (!manager.value) return;
-
-    try {
-      await manager.value.disconnect();
-
-      // 使用storage工具清除本地存储的钱包ID（与React包保持一致）
-      storage.remove('btc-connect:last-wallet-id');
-      console.log('🗑️ [walletContext] Cleared saved wallet ID');
-    } catch (error) {
-      console.error('Failed to disconnect wallet:', error);
-      throw error;
-    }
-  };
-
-  const switchWallet = async (walletId: string): Promise<AccountInfo[]> => {
-    if (!manager.value) {
-      throw new Error('Wallet manager not initialized');
-    }
-
-    try {
-      isConnectingValue.value = true;
-      // 在实际实现中，这里应该切换钱包
-      const accounts = await manager.value.connect(walletId);
-      return accounts;
-    } catch (error) {
-      console.error('Failed to switch wallet:', error);
-      throw error;
-    } finally {
-      isConnectingValue.value = false;
-    }
-  };
-
-  const openModal = () => {
-    isModalOpen.value = true;
-  };
-
-  const closeModal = () => {
-    isModalOpen.value = false;
-  };
-
-  const toggleModal = () => {
-    isModalOpen.value = !isModalOpen.value;
-  };
-
-  // 钱包检测方法
-  const startWalletDetection = async (options?: {
-    autoConnect?: boolean;
-    connectTimeout?: number;
-  }): Promise<void> => {
-    if (!manager.value) return;
-
-    const {
-      autoConnect: enableAutoConnect = false,
-      connectTimeout: timeout = 5000,
-    } = options || {};
-
-    // 创建检测管理器
-    detectionManager.value = new WalletDetectionManager({
-      timeout: 20000, // 20秒超时
-      interval: 10000, // 10秒间隔
-      immediateInterval: 1000, // 1秒初始间隔
-      maxImmediateChecks: 5, // 最多5次初始检测
-    }) as WalletDetectionManager;
-
-    // 监听新钱包检测事件
-    detectionManager.value.on('walletDetected', (params) => {
-      console.log(`🆕 [walletContext] 新钱包检测到: ${params.walletId}`);
-
-      // 实时更新可用钱包列表
-      const currentWallets = context.availableWallets.value;
-      const walletExists = currentWallets.some((w) => w.id === params.walletId);
-
-      if (!walletExists) {
-        context.availableWallets.value = [...currentWallets, params.walletInfo];
-      }
-
-      // 如果启用了自动连接，检查是否是上次连接的钱包
-      if (enableAutoConnect) {
-        const lastWalletId = storage.get<string>('btc-connect:last-wallet-id');
-        if (lastWalletId === params.walletId) {
-          console.log(
-            `🎯 [walletContext] 检测到上次连接的钱包 ${params.walletId}，立即尝试自动连接`,
-          );
-          // 延迟一小段时间确保钱包完全就绪
-          setTimeout(() => {
-            if (manager.value && manager.value instanceof BTCWalletManager) {
-              attemptAutoConnect(manager.value, timeout);
-            }
-          }, 100);
-        }
-      }
-    });
-
-    // 监听可用钱包列表变化事件
-    detectionManager.value.on('availableWallets', (params) => {
-      console.log(
-        `📱 [walletContext] 可用钱包列表更新: ${params.wallets.length}个钱包`,
-      );
-      context.availableWallets.value = params.wallets;
-
-      // 强制触发响应式更新
-      context._stateUpdateTrigger.value++;
-    });
-
-    // 监听检测完成事件
-    detectionManager.value.on('walletDetectionComplete', (params) => {
-      console.log(
-        `🏁 [walletContext] 钱包检测完成: ${params.wallets.length}个钱包 (耗时: ${params.elapsedTime}ms)`,
-      );
-
-      // 最终更新可用钱包列表
-      const walletInfos = params.adapters.map((adapter) => ({
-        id: adapter.id,
-        name: adapter.name,
-        icon: adapter.icon,
-      }));
-      context.availableWallets.value = walletInfos;
-
-      // 强制触发响应式更新
-      context._stateUpdateTrigger.value++;
-    });
-
-    // 开始检测
-    await detectionManager.value.startDetection();
-  };
-
-  const stopWalletDetection = (): void => {
-    if (detectionManager.value) {
-      detectionManager.value.stopDetection();
-      detectionManager.value = null;
-    }
-  };
-
-  const context: WalletContext = {
-    manager: manager as Ref<BTCWalletManager | null>,
-    state,
-    currentWallet,
-    availableWallets,
-    isConnected,
-    isConnecting,
-    isModalOpen,
-
-    // 钱包检测管理器
-    detectionManager: detectionManager as Ref<WalletDetectionManager | null>,
-    isDetecting,
-
-    // 操作方法
-    connect,
-    disconnect,
-    switchWallet,
-    openModal,
-    closeModal,
-    toggleModal,
-
-    // 钱包检测方法
-    startWalletDetection,
-    stopWalletDetection,
-
-    // 内部状态更新trigger
-    _stateUpdateTrigger: stateUpdateTrigger,
-  };
-
-  return context;
-}
-
-// 获取钱包上下文 - 推荐使用 Vue provide/inject 系统
+/**
+ * Get wallet context - recommended to use Vue provide/inject system
+ *
+ * @returns Wallet context containing manager, state, and operations
+ *
+ * @example
+ * ```vue
+ * <script setup>
+ * import { useWalletContext } from '@btc-connect/vue';
+ *
+ * const ctx = useWalletContext();
+ *
+ * // Access wallet state
+ * console.log('Connected:', ctx.isConnected.value);
+ * console.log('Address:', ctx.state.value.currentAccount?.address);
+ * </script>
+ * ```
+ */
 export function useWalletContext(): WalletContext {
   // 尝试从 Vue 的注入系统中获取上下文
   const injectedContext = inject<WalletContext | null>(
@@ -344,7 +113,25 @@ export function useWalletContext(): WalletContext {
   return context;
 }
 
-// 新增：直接从注入系统获取上下文（推荐使用）
+/**
+ * Get context directly from Vue inject system (recommended)
+ *
+ * This function ensures the context is provided by BTCWalletPlugin.
+ * Use this when you want strict type safety and explicit plugin requirement.
+ *
+ * @returns Wallet context
+ * @throws Error if used outside of BTCWalletPlugin
+ *
+ * @example
+ * ```vue
+ * <script setup>
+ * import { useProvidedWalletContext } from '@btc-connect/vue';
+ *
+ * // This will throw if BTCWalletPlugin is not installed
+ * const ctx = useProvidedWalletContext();
+ * </script>
+ * ```
+ */
 export function useProvidedWalletContext(): WalletContext {
   const context = inject<WalletContext>(BTC_WALLET_CONTEXT_KEY);
 
@@ -358,7 +145,217 @@ export function useProvidedWalletContext(): WalletContext {
   return context;
 }
 
-// 创建空上下文（用于 SSR）
+// Create wallet context (internal function, not exported)
+function createWalletContext(): WalletContext {
+  // SSR protection: only initialize manager on client
+  const manager = ref<BTCWalletManager | null>(null);
+
+  // Modal state
+  const isModalOpen = ref(false);
+
+  // Connection state
+  const isConnectingValue = ref(false);
+
+  // Available wallets list
+  const availableWallets = ref<WalletInfo[]>([]);
+
+  // Wallet detection manager
+  const detectionManager = ref<WalletDetectionManager | null>(null);
+
+  // Force update trigger
+  const stateUpdateTrigger = ref(0);
+
+  // Computed properties - depend on trigger for forced updates
+  const state = computed(() => {
+    const managerState = manager.value?.getState() || {
+      status: 'disconnected' as ConnectionStatus,
+      accounts: [],
+      currentAccount: undefined,
+      network: 'livenet' as Network,
+      error: undefined,
+    };
+
+    if (manager.value) {
+      return manager.value.getState();
+    }
+
+    return managerState;
+  });
+
+  const currentWallet = computed(
+    () => manager.value?.getCurrentWallet() || null,
+  );
+  const isConnected = computed(() => state.value.status === 'connected');
+  const isConnecting = computed(
+    () => isConnectingValue.value || state.value.status === 'connecting',
+  );
+  const isDetecting = computed(
+    () => detectionManager.value?.isActive() || false,
+  );
+
+  // Connect method
+  const connect = async (walletId: string): Promise<AccountInfo[]> => {
+    if (!manager.value) {
+      throw new Error('Wallet manager not initialized');
+    }
+
+    try {
+      isConnectingValue.value = true;
+      const accounts = await manager.value.connect(walletId);
+
+      if (accounts.length > 0) {
+        storage.set('btc-connect:last-wallet-id', walletId);
+        console.log(`💾 [walletContext] Saved wallet ID: ${walletId}`);
+      }
+
+      return accounts;
+    } catch (error) {
+      console.error('❌ [walletContext] Failed to connect wallet:', error);
+      throw error;
+    } finally {
+      isConnectingValue.value = false;
+    }
+  };
+
+  const disconnect = async (): Promise<void> => {
+    if (!manager.value) return;
+
+    try {
+      await manager.value.disconnect();
+      storage.remove('btc-connect:last-wallet-id');
+      console.log('🗑️ [walletContext] Cleared saved wallet ID');
+    } catch (error) {
+      console.error('Failed to disconnect wallet:', error);
+      throw error;
+    }
+  };
+
+  const switchWallet = async (walletId: string): Promise<AccountInfo[]> => {
+    if (!manager.value) {
+      throw new Error('Wallet manager not initialized');
+    }
+
+    try {
+      isConnectingValue.value = true;
+      const accounts = await manager.value.connect(walletId);
+      return accounts;
+    } catch (error) {
+      console.error('Failed to switch wallet:', error);
+      throw error;
+    } finally {
+      isConnectingValue.value = false;
+    }
+  };
+
+  const openModal = () => {
+    isModalOpen.value = true;
+  };
+
+  const closeModal = () => {
+    isModalOpen.value = false;
+  };
+
+  const toggleModal = () => {
+    isModalOpen.value = !isModalOpen.value;
+  };
+
+  // Wallet detection methods
+  const startWalletDetection = async (options?: {
+    autoConnect?: boolean;
+    connectTimeout?: number;
+  }): Promise<void> => {
+    if (!manager.value) return;
+
+    const {
+      autoConnect: enableAutoConnect = false,
+      connectTimeout: timeout = 5000,
+    } = options || {};
+
+    detectionManager.value = new WalletDetectionManager({
+      timeout: 20000,
+      interval: 10000,
+      immediateInterval: 1000,
+      maxImmediateChecks: 5,
+    }) as WalletDetectionManager;
+
+    detectionManager.value.on('walletDetected', (params) => {
+      console.log(`🆕 [walletContext] New wallet detected: ${params.walletId}`);
+      const currentWallets = context.availableWallets.value;
+      const walletExists = currentWallets.some((w) => w.id === params.walletId);
+      if (!walletExists) {
+        context.availableWallets.value = [...currentWallets, params.walletInfo];
+      }
+      if (enableAutoConnect) {
+        const lastWalletId = storage.get<string>('btc-connect:last-wallet-id');
+        if (lastWalletId === params.walletId) {
+          console.log(
+            `🎯 [walletContext] Detected last connected wallet ${params.walletId}, attempting auto-connect`,
+          );
+          setTimeout(() => {
+            if (manager.value && manager.value instanceof BTCWalletManager) {
+              attemptAutoConnect(manager.value, timeout);
+            }
+          }, 100);
+        }
+      }
+    });
+
+    detectionManager.value.on('availableWallets', (params) => {
+      console.log(
+        `📱 [walletContext] Available wallets updated: ${params.wallets.length} wallets`,
+      );
+      context.availableWallets.value = params.wallets;
+      context._stateUpdateTrigger.value++;
+    });
+
+    detectionManager.value.on('walletDetectionComplete', (params) => {
+      console.log(
+        `🏁 [walletContext] Wallet detection complete: ${params.wallets.length} wallets (${params.elapsedTime}ms)`,
+      );
+      const walletInfos = params.adapters.map((adapter) => ({
+        id: adapter.id,
+        name: adapter.name,
+        icon: adapter.icon,
+      }));
+      context.availableWallets.value = walletInfos;
+      context._stateUpdateTrigger.value++;
+    });
+
+    await detectionManager.value.startDetection();
+  };
+
+  const stopWalletDetection = (): void => {
+    if (detectionManager.value) {
+      detectionManager.value.stopDetection();
+      detectionManager.value = null;
+    }
+  };
+
+  const context: WalletContext = {
+    manager: manager as Ref<BTCWalletManager | null>,
+    state,
+    currentWallet,
+    availableWallets,
+    isConnected,
+    isConnecting,
+    isModalOpen,
+    detectionManager: detectionManager as Ref<WalletDetectionManager | null>,
+    isDetecting,
+    connect,
+    disconnect,
+    switchWallet,
+    openModal,
+    closeModal,
+    toggleModal,
+    startWalletDetection,
+    stopWalletDetection,
+    _stateUpdateTrigger: stateUpdateTrigger,
+  };
+
+  return context;
+}
+
+// Create empty context (for SSR)
 function createEmptyContext(): WalletContext {
   const emptyRef = ref([]);
   const emptyComputed = computed(() => ({
@@ -377,12 +374,8 @@ function createEmptyContext(): WalletContext {
     isConnected: computed(() => false),
     isConnecting: computed(() => false),
     isModalOpen: ref(false),
-
-    // 钱包检测管理器
     detectionManager: ref(null),
     isDetecting: computed(() => false),
-
-    // 空操作方法
     connect: async () => {
       throw new Error('Wallet context not initialized in SSR');
     },
@@ -393,17 +386,15 @@ function createEmptyContext(): WalletContext {
     openModal: () => { },
     closeModal: () => { },
     toggleModal: () => { },
-
-    // 钱包检测方法
     startWalletDetection: async () => { },
     stopWalletDetection: () => { },
-
-    // 内部状态更新trigger
     _stateUpdateTrigger: ref(0),
   };
 }
 
-// Vue 插件选项类型
+/**
+ * Vue plugin options interface
+ */
 export interface BTCWalletPluginOptions {
   autoConnect?: boolean;
   connectTimeout?: number;
@@ -418,7 +409,57 @@ export interface BTCWalletPluginOptions {
   };
 }
 
-// Vue 插件
+/**
+ * BTC Wallet Vue Plugin
+ *
+ * Vue 3 plugin that provides wallet functionality to the entire application.
+ * Must be installed before using any wallet composables.
+ *
+ * @param app - Vue application instance
+ * @param options - Plugin configuration options
+ * @param options.autoConnect - Enable automatic wallet reconnection (default: true)
+ * @param options.connectTimeout - Connection timeout in ms (default: 5000)
+ * @param options.modalConfig - Modal configuration
+ * @param options.config - Wallet manager configuration
+ *
+ * @example
+ * ```typescript
+ * // main.ts
+ * import { createApp } from 'vue';
+ * import { BTCWalletPlugin } from '@btc-connect/vue';
+ * import App from './App.vue';
+ *
+ * const app = createApp(App);
+ *
+ * app.use(BTCWalletPlugin, {
+ *   autoConnect: true,
+ *   connectTimeout: 10000,
+ *   theme: 'light',
+ *   config: {
+ *     wallets: {
+ *       order: ['unisat', 'okx', 'xverse'],
+ *       featured: ['unisat', 'okx']
+ *     }
+ *   }
+ * });
+ *
+ * app.mount('#app');
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Nuxt 3 plugin
+ * // plugins/btc-connect.client.ts
+ * import { BTCWalletPlugin } from '@btc-connect/vue';
+ *
+ * export default defineNuxtPlugin((nuxtApp) => {
+ *   nuxtApp.vueApp.use(BTCWalletPlugin, {
+ *     autoConnect: true,
+ *     theme: 'auto'
+ *   });
+ * });
+ * ```
+ */
 export const BTCWalletPlugin = {
   install(app: App, options: BTCWalletPluginOptions = {}) {
     const {
@@ -445,34 +486,13 @@ export const BTCWalletPlugin = {
         ...config,
         modalConfig: modalConfig || config?.modalConfig,
         onStateChange: (state: WalletState) => {
-          // 状态变化时强制更新Vue响应式系统
-          console.log('🔄 [BTC-Connect:Vue] State changed:', state.status, state.currentAccount?.address);
-
-          // 🔧 增强响应式更新：立即强制触发状态更新
           context._stateUpdateTrigger.value++;
 
-          // 🔧 双重保险：使用 nextTick 确保响应式更新
-          nextTick(() => {
-            console.log('🔄 [BTC-Connect:Vue] Triggering nextTick update');
-            context._stateUpdateTrigger.value++;
-          });
-
-          // 当连接成功时，通过事件获取账户详情
           if (state.status === 'connected' && state.currentAccount) {
-            // 延迟执行，避免与连接事件冲突
             setTimeout(() => {
               fetchAccountDetails(walletManager);
             }, 100);
           }
-
-          // 🔧 三重保险：强制重新计算所有依赖的computed
-          setTimeout(() => {
-            context._stateUpdateTrigger.value++;
-            // 强制访问这些属性，触发重新计算
-            context.state;
-            context.currentWallet;
-            context.isConnected;
-          }, 0);
         },
         onError: (error: Error) => {
           console.error('❌ [walletContext] Wallet error:', error);

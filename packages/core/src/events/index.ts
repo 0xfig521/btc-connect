@@ -18,28 +18,64 @@ interface EventListener<T extends WalletEvent> {
 }
 
 /**
- * 简单的事件发射器实现
+ * Simple event emitter implementation for wallet events.
+ * Provides type-safe event handling with support for one-time listeners.
+ *
+ * @example
+ * ```typescript
+ * import { EventEmitter } from '@btc-connect/core';
+ *
+ * const emitter = new EventEmitter();
+ *
+ * // Add listener
+ * emitter.on('connect', (params) => {
+ *   console.log('Connected:', params.walletId);
+ * });
+ *
+ * // One-time listener
+ * emitter.once('disconnect', (params) => {
+ *   console.log('Disconnected:', params.walletId);
+ * });
+ *
+ * // Emit event
+ * emitter.emit('connect', { walletId: 'unisat', accounts: [...] });
+ *
+ * // Remove listener
+ * emitter.off('connect', handler);
+ * ```
  */
 export class EventEmitter {
   private listeners: Map<WalletEvent, EventListener<any>[]> = new Map();
   private maxListeners: number = 100;
 
   /**
-   * 添加事件监听器
+   * Registers an event listener.
+   *
+   * @template T - The event type
+   * @param event - The event name
+   * @param handler - The callback function
    */
   on<T extends WalletEvent>(event: T, handler: EventHandler<T>): void {
     this.addListener(event, handler, false);
   }
 
   /**
-   * 添加一次性事件监听器
+   * Registers a one-time event listener that is removed after first invocation.
+   *
+   * @template T - The event type
+   * @param event - The event name
+   * @param handler - The callback function
    */
   once<T extends WalletEvent>(event: T, handler: EventHandler<T>): void {
     this.addListener(event, handler, true);
   }
 
   /**
-   * 移除事件监听器
+   * Removes an event listener.
+   *
+   * @template T - The event type
+   * @param event - The event name
+   * @param handler - The callback function to remove
    */
   off<T extends WalletEvent>(event: T, handler: EventHandler<T>): void {
     const listeners = this.listeners.get(event);
@@ -59,7 +95,9 @@ export class EventEmitter {
   }
 
   /**
-   * 移除所有事件监听器
+   * Removes all listeners for a specific event, or all listeners if no event specified.
+   *
+   * @param event - Optional event name to clear listeners for
    */
   removeAllListeners(event?: WalletEvent): void {
     if (event) {
@@ -70,7 +108,11 @@ export class EventEmitter {
   }
 
   /**
-   * 发射事件
+   * Emits an event to all registered listeners.
+   *
+   * @param event - The event name
+   * @param args - Event arguments
+   * @returns True if listeners were called, false otherwise
    */
   emit(event: WalletEvent, ...args: any[]): boolean {
     const listeners = this.listeners.get(event);
@@ -149,13 +191,38 @@ export class EventEmitter {
 }
 
 /**
- * 钱包事件管理器
+ * Wallet-specific event manager with typed event emission methods.
+ * Extends EventEmitter with wallet-specific event types.
+ *
+ * @example
+ * ```typescript
+ * import { WalletEventManager } from '@btc-connect/core';
+ *
+ * const eventManager = new WalletEventManager();
+ *
+ * // Listen to events
+ * eventManager.on('connect', (params) => {
+ *   console.log('Connected:', params.walletId, params.accounts);
+ * });
+ *
+ * eventManager.on('accountChange', (params) => {
+ *   console.log('Account changed:', params.accounts);
+ * });
+ *
+ * // Emit events
+ * eventManager.emitConnect('unisat', accounts);
+ * eventManager.emitAccountChange('unisat', newAccounts);
+ * ```
  */
 export class WalletEventManager extends EventEmitter {
   private isDestroyed = false;
 
   /**
-   * 发射连接事件
+   * Emits a wallet connect event.
+   *
+   * @param walletId - The connected wallet ID
+   * @param accounts - The connected accounts
+   * @returns True if listeners were called
    */
   emitConnect(
     walletId: string,
@@ -166,7 +233,10 @@ export class WalletEventManager extends EventEmitter {
   }
 
   /**
-   * 发射断开连接事件
+   * Emits a wallet disconnect event.
+   *
+   * @param walletId - The disconnected wallet ID
+   * @returns True if listeners were called
    */
   emitDisconnect(walletId: string): boolean {
     if (this.isDestroyed) return false;
@@ -174,7 +244,11 @@ export class WalletEventManager extends EventEmitter {
   }
 
   /**
-   * 发射账户变化事件
+   * Emits an account change event.
+   *
+   * @param walletId - The wallet ID
+   * @param accounts - The new account list
+   * @returns True if listeners were called
    */
   emitAccountChange(
     walletId: string,

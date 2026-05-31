@@ -2,7 +2,41 @@ import { watch } from 'vue';
 import { useWalletContext } from '../walletContext';
 
 /**
- * 使用连接功能的Composable
+ * Wallet connection operations Composable
+ *
+ * Provides wallet connection, disconnection, and switching functionality.
+ *
+ * @returns Connection methods and available wallets
+ * @returns {(walletId: string) => Promise<AccountInfo[]>} returns.connect - Connect to a wallet
+ * @returns {() => Promise<void>} returns.disconnect - Disconnect current wallet
+ * @returns {(walletId: string) => Promise<AccountInfo[]>} returns.switchWallet - Switch to another wallet
+ * @returns {Ref<WalletInfo[]>} returns.availableWallets - List of available wallets
+ *
+ * @example
+ * ```vue
+ * <script setup>
+ * import { useConnectWallet } from '@btc-connect/vue';
+ *
+ * const { connect, disconnect, switchWallet, availableWallets } = useConnectWallet();
+ *
+ * const handleConnect = async (walletId: string) => {
+ *   const accounts = await connect(walletId);
+ *   console.log('Connected:', accounts);
+ * };
+ * </script>
+ *
+ * <template>
+ *   <div>
+ *     <button v-for="wallet in availableWallets" :key="wallet.id" @click="handleConnect(wallet.id)">
+ *       Connect {{ wallet.name }}
+ *     </button>
+ *   </div>
+ * </template>
+ * ```
+ */
+
+/**
+ * Use connection functionality Composable
  */
 export function useConnectWallet() {
   const ctx = useWalletContext();

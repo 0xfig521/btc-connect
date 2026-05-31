@@ -18,7 +18,32 @@ declare global {
 }
 
 /**
- * Xverse钱包适配器
+ * Xverse wallet adapter implementing the Xverse Bitcoin API.
+ * Provides core Bitcoin wallet operations including connection,
+ * signing, and Bitcoin transfers.
+ *
+ * @example
+ * ```typescript
+ * import { XverseAdapter } from '@btc-connect/core';
+ *
+ * const adapter = new XverseAdapter();
+ *
+ * // Check if Xverse is installed
+ * if (adapter.isReady()) {
+ *   // Connect to wallet
+ *   const accounts = await adapter.connect();
+ *   console.log('Connected:', accounts[0].address);
+ *
+ *   // Get network
+ *   const network = await adapter.getNetwork();
+ *
+ *   // Sign message
+ *   const signature = await adapter.signMessage('Hello');
+ *
+ *   // Send Bitcoin
+ *   const txId = await adapter.sendBitcoin('tb1q...', 10000);
+ * }
+ * ```
  */
 export class XverseAdapter extends BaseWalletAdapter {
   readonly id = 'xverse';

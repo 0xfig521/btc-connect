@@ -69,19 +69,19 @@
 ### 核心（框架无关）
 
 ```bash
-npm install @btc-connect/core
+bun add @btc-connect/core
 ```
 
 ### React
 
 ```bash
-npm install @btc-connect/react
+bun add @btc-connect/react
 ```
 
 ### Vue
 
 ```bash
-npm install @btc-connect/vue
+bun add @btc-connect/vue
 ```
 
 ## 🎯 快速开始
@@ -91,13 +91,13 @@ npm install @btc-connect/vue
 1. **安装包**
 ```bash
 # React
-npm install @btc-connect/react
+bun add @btc-connect/react
 
 # Vue
-npm install @btc-connect/vue
+bun add @btc-connect/vue
 
 # 核心（框架无关）
-npm install @btc-connect/core
+bun add @btc-connect/core
 ```
 
 2. **基础使用**
@@ -185,9 +185,8 @@ const { isConnected, address, balance, connect, disconnect } = useWallet();
 
 ### 🏗️ 项目示例
 - [React示例](./examples/react/) - 基础React集成示例
-- [Vue示例](./examples/vue-example/) - 基础Vue集成示例
-- [Next.js示例](./examples/nextjs/) - Next.js SSR完整示例
 - [Nuxt.js示例](./examples/nuxt-example/) - Nuxt 3 SSR完整示例
+- [Next.js示例](./examples/nextjs/) - Next.js SSR完整示例
 
 ### 🔄 迁移和更新
 - [📝 变更日志](./CHANGELOG.md) - 完整版本变更记录
@@ -202,7 +201,7 @@ btc-connect/
 │   └── vue/           # Vue 集成
 ├── examples/          # 使用示例
 │   ├── react/         # React 示例
-│   ├── vue-example/   # Vue 示例
+│   ├── nuxt-example/  # Nuxt 3 SSR 示例
 │   └── nextjs/        # Next.js SSR 示例
 └── docs/             # 附加文档
 ```

@@ -72,7 +72,7 @@ export {
 } from './walletContext';
 
 // 版本信息
-export const version = '0.3.14';
+export const version = '0.5.1';
 
 // SSR 检查工具
 export const isClient = typeof window !== 'undefined';

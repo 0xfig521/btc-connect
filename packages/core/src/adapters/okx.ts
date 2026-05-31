@@ -143,7 +143,43 @@ declare global {
 }
 
 /**
- * OKX钱包适配器
+ * OKX wallet adapter implementing the OKX Bitcoin API.
+ * Provides comprehensive support for Bitcoin wallet operations including
+ * inscriptions, NFT transfers, UTXO management, and PSBT signing.
+ *
+ * @example
+ * ```typescript
+ * import { OKXAdapter } from '@btc-connect/core';
+ *
+ * const adapter = new OKXAdapter();
+ *
+ * // Check if OKX is installed
+ * if (adapter.isReady()) {
+ *   // Connect to wallet
+ *   const accounts = await adapter.connect();
+ *   console.log('Connected:', accounts[0].address);
+ *
+ *   // Get balance
+ *   const balance = await adapter.getBalance();
+ *   console.log('Balance:', balance.total);
+ *
+ *   // Sign message
+ *   const signature = await adapter.signMessage('Hello');
+ *
+ *   // Send Bitcoin
+ *   const txId = await adapter.sendBitcoin('tb1q...', 10000);
+ *
+ *   // Get inscriptions
+ *   const inscriptions = await adapter.getInscriptions({ cursor: 0, size: 10 });
+ *
+ *   // Transfer NFT
+ *   const result = await adapter.transferNft({
+ *     from: 'tb1q...',
+ *     to: 'tb1q...',
+ *     data: { tokenId: 'abc123' }
+ *   });
+ * }
+ * ```
  */
 export class OKXAdapter extends BaseWalletAdapter {
   readonly id = 'okx';

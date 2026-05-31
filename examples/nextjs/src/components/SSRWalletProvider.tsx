@@ -54,7 +54,6 @@ export function SSRWalletProvider({
   // 客户端渲染时，才渲染完整的钱包提供者
   return (
     <BTCWalletProvider
-      theme={theme}
       autoConnect={true}
       connectTimeout={5000}
       connectionPolicy={{

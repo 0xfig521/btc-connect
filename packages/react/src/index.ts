@@ -40,10 +40,10 @@ export {
 // 保持向后兼容的导出
 export {
   useAccount,
+  useAutoConnect,
   useBalance,
   useConnectWallet,
   useNetwork,
-  useRefreshAccountInfo, // 已弃用，功能已集成到 useWallet
   useSignature,
   useTransactions,
   useWallet,
@@ -51,7 +51,6 @@ export {
   useWalletEvent,
   useWalletManager,
   useWalletModal,
-  useWalletModalEnhanced,
 } from './hooks';
 // React 特定类型
 export type {
@@ -85,7 +84,7 @@ export {
 } from './utils';
 
 // 版本信息
-export const version = '0.1.4';
+export const version = '0.5.1';
 
 // 默认配置
 export const defaultConfig = {

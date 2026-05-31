@@ -1,20 +1,45 @@
 /**
- * BTC Connect Vue 工具函数
+ * BTC Connect Vue utility functions
  *
- * 提供钱包连接、格式化、存储等通用工具函数
- * 增强了错误处理、性能优化和类型安全
+ * Provides common utility functions for wallet connection, formatting, and storage.
+ * All functions are SSR-safe and include proper error handling.
  */
 
 import type { CacheItem } from '../types';
 
-// 样式工具函数
+/**
+ * Combine class names, filtering out falsy values
+ *
+ * @param classes - Class names to combine
+ * @returns Combined class string
+ *
+ * @example
+ * ```typescript
+ * import { cn } from '@btc-connect/vue';
+ *
+ * const className = cn('base', isActive && 'active', isDisabled && 'disabled');
+ * // Result: 'base active' (if isActive is true and isDisabled is false)
+ * ```
+ */
 export const cn = (
   ...classes: (string | undefined | null | false)[]
 ): string => {
   return classes.filter(Boolean).join(' ');
 };
 
-// 复制到剪贴板
+/**
+ * Copy text to clipboard
+ *
+ * @param text - Text to copy
+ * @returns Promise that resolves when copy is complete
+ *
+ * @example
+ * ```typescript
+ * import { copyToClipboard } from '@btc-connect/vue';
+ *
+ * await copyToClipboard('bc1qxy2kgdygjrsqtzq6n0yqrwd6hhn2p7s5h2r5m');
+ * ```
+ */
 export const copyToClipboard = async (text: string): Promise<void> => {
   // SSR 安全：无浏览器环境时直接返回
   if (typeof window === 'undefined') return;
@@ -34,7 +59,24 @@ export const copyToClipboard = async (text: string): Promise<void> => {
   }
 };
 
-// 格式化地址
+/**
+ * Format Bitcoin address for display
+ *
+ * @param address - Full Bitcoin address
+ * @param length - Number of characters to show at start and end (default: 6)
+ * @returns Formatted address like "bc1qxy...2r5m"
+ *
+ * @example
+ * ```typescript
+ * import { formatAddress } from '@btc-connect/vue';
+ *
+ * const short = formatAddress('bc1qxy2kgdygjrsqtzq6n0yqrwd6hhn2p7s5h2r5m');
+ * // Result: 'bc1qxy...h2r5m'
+ *
+ * const shorter = formatAddress('bc1qxy2kgdygjrsqtzq6n0yqrwd6hhn2p7s5h2r5m', 4);
+ * // Result: 'bc1q...r5m'
+ * ```
+ */
 export const formatAddress = (address: string, length = 6): string => {
   if (!address) return '';
   if (address.length <= length * 2) return address;
@@ -42,7 +84,21 @@ export const formatAddress = (address: string, length = 6): string => {
   return `${address.slice(0, length)}...${address.slice(-length)}`;
 };
 
-// 只显示地址后几位
+/**
+ * Format address to show only last few characters
+ *
+ * @param address - Full Bitcoin address
+ * @param suffixLength - Number of characters to show (default: 4)
+ * @returns Last characters of address
+ *
+ * @example
+ * ```typescript
+ * import { formatAddressShort } from '@btc-connect/vue';
+ *
+ * const short = formatAddressShort('bc1qxy2kgdygjrsqtzq6n0yqrwd6hhn2p7s5h2r5m', 4);
+ * // Result: 'r5m'
+ * ```
+ */
 export const formatAddressShort = (
   address: string,
   suffixLength = 4,
@@ -53,7 +109,22 @@ export const formatAddressShort = (
   return address.slice(-suffixLength);
 };
 
-// 按需保留最多 6 位小数并去掉末尾 0（仅当传入为小数时）
+/**
+ * Format decimal number, removing trailing zeros
+ *
+ * @param value - Number or string to format
+ * @param maxFractionDigits - Maximum decimal places (default: 6)
+ * @returns Formatted number string
+ *
+ * @example
+ * ```typescript
+ * import { formatDecimal } from '@btc-connect/vue';
+ *
+ * formatDecimal('1.500000'); // '1.5'
+ * formatDecimal(1.0); // '1'
+ * formatDecimal(1.23456789, 4); // '1.2346'
+ * ```
+ */
 export const formatDecimal = (
   value: number | string,
   maxFractionDigits = 6,
@@ -74,7 +145,22 @@ export const formatDecimal = (
   return parseFloat(fixed).toString();
 };
 
-// 格式化余额
+/**
+ * Format balance as BTC string
+ *
+ * @param balance - Balance value in BTC
+ * @param decimals - Number of decimal places (default: 8)
+ * @returns Formatted balance string with BTC suffix
+ *
+ * @example
+ * ```typescript
+ * import { formatBalance } from '@btc-connect/vue';
+ *
+ * formatBalance(1.5); // '1.50000000 BTC'
+ * formatBalance(0.0000005); // '< 0.000001 BTC'
+ * formatBalance(1500); // '1500 BTC'
+ * ```
+ */
 export const formatBalance = (
   balance: number | string,
   decimals = 8,
@@ -92,7 +178,21 @@ export const formatBalance = (
   return `${num.toFixed(decimals)} BTC`;
 };
 
-// 格式化BTC余额（聪转BTC，智能单位显示）
+/**
+ * Format satoshis to BTC with smart unit display
+ *
+ * @param satoshis - Balance in satoshis
+ * @returns Formatted BTC balance with optional K/M suffix
+ *
+ * @example
+ * ```typescript
+ * import { formatBTCBalance } from '@btc-connect/vue';
+ *
+ * formatBTCBalance(100000000); // '1'
+ * formatBTCBalance(1500000000); // '1.5'
+ * formatBTCBalance(100000000000); // '100M' (if very large)
+ * ```
+ */
 export const formatBTCBalance = (satoshis: number): string => {
   // 1 BTC = 100,000,000 satoshis
   const btc = satoshis / 100000000;

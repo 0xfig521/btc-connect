@@ -6,7 +6,21 @@ export { OKXAdapter } from './okx';
 export { UniSatAdapter } from './unisat';
 export { XverseAdapter } from './xverse';
 
-// 适配器工厂函数
+/**
+ * Creates a wallet adapter instance based on the wallet type.
+ *
+ * @param type - The wallet type identifier ('unisat', 'okx', or 'xverse')
+ * @returns A new wallet adapter instance
+ * @throws {Error} If the wallet type is not supported
+ *
+ * @example
+ * ```typescript
+ * import { createAdapter } from '@btc-connect/core';
+ *
+ * const adapter = createAdapter('unisat');
+ * await adapter.connect();
+ * ```
+ */
 export function createAdapter(type: 'unisat' | 'okx' | 'xverse') {
   switch (type) {
     case 'unisat':
@@ -20,12 +34,38 @@ export function createAdapter(type: 'unisat' | 'okx' | 'xverse') {
   }
 }
 
-// 获取所有可用的适配器
+/**
+ * Gets all supported wallet adapter instances.
+ * This returns adapters for all wallets regardless of whether they are installed.
+ *
+ * @returns Array of all wallet adapter instances
+ *
+ * @example
+ * ```typescript
+ * import { getAllAdapters } from '@btc-connect/core';
+ *
+ * const adapters = getAllAdapters();
+ * console.log('Supported wallets:', adapters.map(a => a.name));
+ * ```
+ */
 export function getAllAdapters() {
   return [new UniSatAdapter(), new OKXAdapter()];
 }
 
-// 获取可用的适配器（已安装的钱包）
+/**
+ * Gets wallet adapter instances for installed wallets only.
+ * Filters out adapters for wallets that are not installed in the browser.
+ *
+ * @returns Array of wallet adapter instances for installed wallets
+ *
+ * @example
+ * ```typescript
+ * import { getAvailableAdapters } from '@btc-connect/core';
+ *
+ * const adapters = getAvailableAdapters();
+ * console.log('Installed wallets:', adapters.map(a => a.name));
+ * ```
+ */
 export function getAvailableAdapters() {
   return getAllAdapters().filter((adapter) => adapter.isReady());
 }
@@ -46,9 +86,28 @@ export interface WalletDetectionResult {
 }
 
 /**
- * 增强的钱包检测方法，支持轮询检测延迟注入的钱包
- * @param config 检测配置
- * @returns 检测结果
+ * Detects available wallets with support for delayed wallet injection.
+ * Some wallets inject their providers asynchronously, so this function
+ * polls for wallet availability within the specified timeout period.
+ *
+ * @param config - Detection configuration options
+ * @returns Promise resolving to detection result with available wallets
+ *
+ * @example
+ * ```typescript
+ * import { detectAvailableWallets } from '@btc-connect/core';
+ *
+ * const result = await detectAvailableWallets({
+ *   timeout: 20000,
+ *   interval: 300,
+ *   onProgress: (wallets, elapsed) => {
+ *     console.log(`Detected ${wallets.length} wallets after ${elapsed}ms`);
+ *   }
+ * });
+ *
+ * console.log('Available wallets:', result.wallets);
+ * console.log('Detection took:', result.elapsedTime, 'ms');
+ * ```
  */
 export function detectAvailableWallets(
   config: WalletDetectionConfig = {},
@@ -144,7 +203,22 @@ export function detectAvailableWallets(
 }
 
 /**
- * 简化的同步检测方法（向后兼容）
+ * Synchronous wallet detection with retry support.
+ * Attempts to detect installed wallets with a limited number of retries.
+ *
+ * @param maxRetries - Maximum number of retry attempts (default: 5)
+ * @param retryDelay - Delay between retries in milliseconds (default: 300)
+ * @returns Array of available wallet adapters
+ *
+ * @example
+ * ```typescript
+ * import { getAvailableWalletsWithRetry } from '@btc-connect/core';
+ *
+ * const adapters = getAvailableWalletsWithRetry(10, 200);
+ * if (adapters.length > 0) {
+ *   console.log('Found wallet:', adapters[0].name);
+ * }
+ * ```
  */
 export function getAvailableWalletsWithRetry(
   maxRetries: number = 5,

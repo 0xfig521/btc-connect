@@ -45,6 +45,12 @@ export interface ModalConfig {
   zIndex?: number | 'auto' | 'max';
   // z-index策略
   strategy?: 'fixed' | 'dynamic' | 'custom';
+  // 增强配置
+  closeOnEscape?: boolean;
+  closeOnOutsideClick?: boolean;
+  showCloseButton?: boolean;
+  preventBodyScroll?: boolean;
+  animationDuration?: number;
 }
 
 /** z-index策略类型 */

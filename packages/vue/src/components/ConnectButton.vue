@@ -102,6 +102,55 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * ConnectButton Component
+ *
+ * Main wallet connection button component with integrated wallet selection modal.
+ * Automatically adapts to connected/disconnected states and supports theme customization.
+ *
+ * @component
+ *
+ * @props {ConnectButtonProps} props - Component props
+ * @props {'sm' | 'md' | 'lg'} props.size - Button size (default: 'md')
+ * @props {'select' | 'button' | 'compact'} props.variant - Display variant (default: 'select')
+ * @props {string} props.label - Button text (default: 'Connect')
+ * @props {boolean} props.disabled - Disable button (default: false)
+ * @props {'light' | 'dark' | 'auto'} props.theme - Theme mode (default: from config)
+ * @props {boolean} props.showBalance - Show balance when connected (default: true)
+ * @props {boolean} props.showAddress - Show address when connected (default: true)
+ * @props {number} props.balancePrecision - Balance decimal places (default: 8)
+ *
+ * @emits connect - Emitted when wallet connects successfully
+ * @emits disconnect - Emitted when wallet disconnects
+ * @emits error - Emitted when an error occurs
+ * @emits addressCopied - Emitted when address is copied to clipboard
+ * @emits balanceRefreshed - Emitted when balance is refreshed
+ *
+ * @example
+ * ```vue
+ * <template>
+ *   <ConnectButton
+ *     label="Connect Wallet"
+ *     theme="dark"
+ *     size="lg"
+ *     @connect="handleConnect"
+ *     @disconnect="handleDisconnect"
+ *   />
+ * </template>
+ *
+ * <script setup>
+ * import { ConnectButton } from '@btc-connect/vue';
+ *
+ * const handleConnect = (walletId) => {
+ *   console.log('Connected to:', walletId);
+ * };
+ *
+ * const handleDisconnect = () => {
+ *   console.log('Disconnected');
+ * };
+ * </script>
+ * ```
+ */
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import type { ConnectButtonProps } from '../types';
 import { useWallet } from '../composables/useWallet';

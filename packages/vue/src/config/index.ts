@@ -1,28 +1,41 @@
 /**
- * 配置管理系统
+ * Configuration management system
  *
- * 提供统一的配置管理，支持主题、网络、功能开关等配置
+ * Provides unified configuration management for themes, networks, feature toggles,
+ * and other wallet settings. Supports reactive updates and validation.
  */
 
 import type { ModalConfig } from '@btc-connect/core';
 import { type Ref, ref } from 'vue';
 
-// 主题类型
+/**
+ * Theme mode type
+ */
 export type ThemeMode = 'light' | 'dark' | 'auto';
 
-// 组件尺寸类型
+/**
+ * Component size type
+ */
 export type ComponentSize = 'sm' | 'md' | 'lg';
 
-// 组件变体类型
+/**
+ * Component variant type
+ */
 export type ComponentVariant = 'select' | 'button' | 'compact';
 
-// 动画类型
+/**
+ * Animation type
+ */
 export type AnimationType = 'scale' | 'fade' | 'slide' | 'none';
 
-// 网络类型
+/**
+ * Network type
+ */
 export type NetworkType = 'livenet' | 'testnet' | 'regtest';
 
-// 功能开关配置
+/**
+ * Feature toggle configuration
+ */
 export interface FeatureConfig {
   /** 是否显示余额 */
   balance: boolean;
@@ -40,7 +53,9 @@ export interface FeatureConfig {
   performanceMonitor: boolean;
 }
 
-// 主题配置
+/**
+ * Theme configuration
+ */
 export interface ThemeConfig {
   /** 主题模式 */
   mode: ThemeMode;
@@ -50,7 +65,9 @@ export interface ThemeConfig {
   followSystem: boolean;
 }
 
-// 钱包配置
+/**
+ * Wallet configuration
+ */
 export interface WalletConfig {
   /** 钱包排序 */
   order: string[];
@@ -60,7 +77,9 @@ export interface WalletConfig {
   hidden: string[];
 }
 
-// UI 配置
+/**
+ * UI configuration
+ */
 export interface UIConfig {
   /** 默认组件尺寸 */
   size: ComponentSize;
@@ -74,7 +93,9 @@ export interface UIConfig {
   modalConfig?: ModalConfig;
 }
 
-// 性能配置
+/**
+ * Performance configuration
+ */
 export interface PerformanceConfig {
   /** 是否启用缓存 */
   enableCache: boolean;
@@ -88,7 +109,9 @@ export interface PerformanceConfig {
   stateUpdateThrottle: number;
 }
 
-// 开发配置
+/**
+ * Development configuration
+ */
 export interface DevConfig {
   /** 是否启用调试模式 */
   debug: boolean;
@@ -98,7 +121,9 @@ export interface DevConfig {
   verboseLogging: boolean;
 }
 
-// 完整配置接口
+/**
+ * Complete Vue configuration interface
+ */
 export interface VueConfig {
   /** 主题配置 */
   theme: ThemeConfig;
@@ -114,7 +139,9 @@ export interface VueConfig {
   dev: DevConfig;
 }
 
-// 默认配置
+/**
+ * Default configuration values
+ */
 export const defaultConfig: VueConfig = {
   theme: {
     mode: 'light',
@@ -154,7 +181,23 @@ export const defaultConfig: VueConfig = {
   },
 };
 
-// 配置合并工具
+/**
+ * Merge configuration objects deeply
+ *
+ * @param base - Base configuration object
+ * @param overrides - Override values
+ * @returns Merged configuration
+ *
+ * @example
+ * ```typescript
+ * import { mergeConfig, defaultConfig } from '@btc-connect/vue';
+ *
+ * const customConfig = mergeConfig(defaultConfig, {
+ *   theme: { mode: 'dark' },
+ *   wallets: { featured: ['unisat'] }
+ * });
+ * ```
+ */
 export function mergeConfig<T extends Record<string, any>>(
   base: T,
   overrides: Partial<T>,
@@ -173,7 +216,11 @@ export function mergeConfig<T extends Record<string, any>>(
   return result;
 }
 
-// 配置验证器
+/**
+ * Configuration validator class
+ *
+ * Validates configuration values and throws errors for invalid settings.
+ */
 export class ConfigValidator {
   static validateThemeConfig(config: ThemeConfig): void {
     const validModes: ThemeMode[] = ['light', 'dark', 'auto'];
@@ -259,7 +306,43 @@ export class ConfigValidator {
   }
 }
 
-// 响应式配置管理器
+/**
+ * Create a reactive configuration manager
+ *
+ * Provides a reactive configuration system with validation, updates, and reset functionality.
+ *
+ * @param initialConfig - Initial configuration overrides
+ * @returns Configuration manager with reactive config and methods
+ * @returns {Ref<VueConfig>} returns.config - Reactive configuration object
+ * @returns {(updates: Partial<VueConfig>) => void} returns.updateConfig - Update configuration
+ * @returns {() => void} returns.resetConfig - Reset to default configuration
+ * @returns {() => ThemeConfig} returns.getThemeConfig - Get theme configuration
+ * @returns {() => WalletConfig} returns.getWalletConfig - Get wallet configuration
+ * @returns {() => UIConfig} returns.getUIConfig - Get UI configuration
+ * @returns {() => FeatureConfig} returns.getFeatureConfig - Get feature configuration
+ * @returns {() => PerformanceConfig} returns.getPerformanceConfig - Get performance configuration
+ * @returns {() => DevConfig} returns.getDevConfig - Get development configuration
+ *
+ * @example
+ * ```typescript
+ * import { createConfigManager } from '@btc-connect/vue';
+ *
+ * const configManager = createConfigManager({
+ *   theme: { mode: 'dark' },
+ *   features: { autoConnect: false }
+ * });
+ *
+ * // Update configuration
+ * configManager.updateConfig({ theme: { mode: 'light' } });
+ *
+ * // Get specific config
+ * const themeConfig = configManager.getThemeConfig();
+ * console.log('Theme:', themeConfig.mode);
+ *
+ * // Reset to defaults
+ * configManager.resetConfig();
+ * ```
+ */
 export function createConfigManager(initialConfig?: Partial<VueConfig>) {
   // 合并配置
   const config = ref<VueConfig>(
@@ -327,12 +410,29 @@ export function createConfigManager(initialConfig?: Partial<VueConfig>) {
   };
 }
 
-// 导出配置管理器类型
+/**
+ * Configuration manager type
+ */
 export type ConfigManager = ReturnType<typeof createConfigManager>;
 
-// 全局配置实例（单例）
+/**
+ * Global configuration instance (singleton)
+ */
 let globalConfigManager: ConfigManager | null = null;
 
+/**
+ * Get or create the global configuration manager
+ *
+ * @returns Global configuration manager instance
+ *
+ * @example
+ * ```typescript
+ * import { useConfig } from '@btc-connect/vue';
+ *
+ * const config = useConfig();
+ * console.log('Theme:', config.getThemeConfig().mode);
+ * ```
+ */
 export function useConfig(): ConfigManager {
   if (!globalConfigManager) {
     globalConfigManager = createConfigManager();
@@ -341,7 +441,23 @@ export function useConfig(): ConfigManager {
   return globalConfigManager;
 }
 
-// 初始化全局配置
+/**
+ * Initialize global configuration with custom settings
+ *
+ * @param config - Configuration overrides
+ * @returns Configuration manager instance
+ *
+ * @example
+ * ```typescript
+ * import { initGlobalConfig } from '@btc-connect/vue';
+ *
+ * // Initialize before using any wallet components
+ * initGlobalConfig({
+ *   theme: { mode: 'auto', followSystem: true },
+ *   features: { showTestnet: true }
+ * });
+ * ```
+ */
 export function initGlobalConfig(config?: Partial<VueConfig>): ConfigManager {
   globalConfigManager = createConfigManager(config);
   return globalConfigManager;

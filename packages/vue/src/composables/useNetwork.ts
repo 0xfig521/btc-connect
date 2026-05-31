@@ -2,7 +2,46 @@ import type { Network } from '@btc-connect/core';
 import { computed, ref, watch } from 'vue';
 import { useWalletContext } from '../walletContext';
 
-// 本地网络信息映射
+/**
+ * Network management Composable
+ *
+ * Provides network state management and switching functionality for Bitcoin wallets.
+ *
+ * @returns Network state and methods
+ * @returns {ComputedRef<{network: Network | undefined; name: string; type: string}>} returns.network - Current network info
+ * @returns {Ref<Network | undefined>} returns.currentNetwork - Current network value
+ * @returns {(targetNetwork: Network) => Promise<void>} returns.switchNetwork - Switch to a different network
+ * @returns {ComputedRef<string>} returns.name - Network display name
+ * @returns {(net: Network) => {name: string; type: string}} returns.getNetworkInfo - Get network info by network type
+ *
+ * @example
+ * ```vue
+ * <script setup>
+ * import { useNetwork } from '@btc-connect/vue';
+ *
+ * const { network, switchNetwork, name } = useNetwork();
+ *
+ * const handleSwitchNetwork = async (targetNetwork: 'livenet' | 'testnet') => {
+ *   try {
+ *     await switchNetwork(targetNetwork);
+ *     console.log('Switched to:', targetNetwork);
+ *   } catch (error) {
+ *     console.error('Failed to switch network:', error);
+ *   }
+ * };
+ * </script>
+ *
+ * <template>
+ *   <div>
+ *     <p>Current Network: {{ name }}</p>
+ *     <button @click="handleSwitchNetwork('testnet')">Switch to Testnet</button>
+ *     <button @click="handleSwitchNetwork('livenet')">Switch to Mainnet</button>
+ *   </div>
+ * </template>
+ * ```
+ */
+
+// Local network info mapping
 const NETWORK_INFO: Record<Network, { name: string; type: string }> = {
   livenet: {
     name: 'Mainnet',
@@ -32,6 +71,11 @@ function getNetworkType(network?: Network): string {
   return NETWORK_INFO[network]?.type || 'unknown';
 }
 
+/**
+ * Use network management Composable
+ *
+ * @returns Network state and switching methods
+ */
 export function useNetwork() {
   const ctx = useWalletContext();
 

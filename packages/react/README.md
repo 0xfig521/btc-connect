@@ -107,6 +107,23 @@ Modal component for wallet selection and connection management.
 
 ## React Hooks
 
+### Hooks Overview
+
+| Hook | Description | Main Return Values |
+|------|-------------|-------------------|
+| `useWallet()` | Primary Hook | Unified access point for all wallet functionality |
+| `useConnectWallet()` | Connection Operations | `connect`, `disconnect`, `switchWallet` |
+| `useNetwork()` | Network Management | `network`, `switchNetwork` |
+| `useWalletModal()` | Modal Control | `isModalOpen`, `openModal`, `closeModal` |
+| `useAccount()` | Account Info | `address`, `publicKey`, `accounts` |
+| `useBalance()` | Balance Management | `balance`, `refreshBalance` |
+| `useSignature()` | Signature Operations | `signMessage`, `signPsbt` |
+| `useTransactions()` | Transaction Operations | `sendBitcoin` |
+| `useWalletEvent()` | Event Listening | Automatic lifecycle management |
+| `useWalletManager()` | Manager Access | `currentAdapter`, `availableAdapters` |
+| `useWalletModalEnhanced()` | Enhanced Modal | `openWithSource`, `forceClose` |
+| `useWalletDetection()` | Wallet Detection | `isDetecting`, `detectedWallets`, `stats` |
+
 ### useWallet - Unified Hook
 
 Primary hook providing access to all wallet functionality.
@@ -114,25 +131,56 @@ Primary hook providing access to all wallet functionality.
 **Returns:**
 ```typescript
 interface UseWalletReturn {
-  // State
+  // === Basic State ===
   status: ConnectionStatus;
   isConnected: boolean;
   isConnecting: boolean;
-  address?: string;
-  balance?: number;
-  network?: Network;
-  error?: Error;
+  address: string | null;
+  balance: BalanceInfo | null;
+  publicKey: string | null;
+  accounts: AccountInfo[];
+  currentAccount: AccountInfo | null;
+  network: Network;
+  error: Error | null;
+  currentWallet: WalletInfo | null;
 
-  // Operations
+  // === Connection Operations ===
   connect: (walletId: string) => Promise<AccountInfo[]>;
   disconnect: () => Promise<void>;
   switchWallet: (walletId: string) => Promise<AccountInfo[]>;
   availableWallets: WalletInfo[];
 
-  // Advanced
-  useWalletEvent: <T extends WalletEvent>(event: T, handler: EventHandler<T>) => UseWalletEventReturn<T>;
-  walletModal: UseWalletModalReturn;
+  // === Network Management ===
+  switchNetwork: (network: Network) => Promise<void>;
+
+  // === Event Listening ===
+  useWalletEvent: <T extends WalletEvent>(event: T, handler: EventHandler<T>) => void;
+
+  // === Modal Control ===
+  walletModal: {
+    isModalOpen: boolean;
+    openModal: () => void;
+    closeModal: () => void;
+    toggleModal: () => void;
+  };
+
+  // === Wallet Manager ===
+  currentAdapter: BTCWalletAdapter | null;
+  allAdapters: BTCWalletAdapter[];
   manager: BTCWalletManager;
+
+  // === Signature Functions ===
+  signMessage: (message: string) => Promise<string>;
+  signPsbt: (psbt: string) => Promise<string>;
+
+  // === Transaction Functions ===
+  sendBitcoin: (to: string, amount: number) => Promise<string>;
+
+  // === Utility Functions ===
+  utils: {
+    formatAddress: (address: string, options?: FormatOptions) => Promise<string>;
+    formatBalance: (satoshis: number, options?: FormatOptions) => Promise<string>;
+  };
 }
 ```
 
@@ -164,7 +212,6 @@ Hook for network management and switching.
 interface UseNetworkReturn {
   network: Network;
   switchNetwork: (network: Network) => Promise<void>;
-  isSwitching: boolean;
 }
 ```
 
@@ -180,6 +227,222 @@ interface UseThemeReturn {
   effectiveTheme: ThemeMode;
   setTheme: (theme: ThemeMode) => void;
   resetTheme: () => void;
+}
+```
+
+### useWalletDetection
+
+Hook for real-time wallet detection with event-based updates. Provides comprehensive wallet detection status management and event listening.
+
+**Returns:**
+```typescript
+interface UseWalletDetectionReturn {
+  // === State ===
+  isDetecting: boolean;                    // Whether detection is in progress
+  detectedWallets: DetectedWallet[];       // List of detected wallets
+  detectionComplete: boolean;              // Whether detection is complete
+  lastDetectionTime: number | null;        // Timestamp of last detection
+  stats: WalletDetectionStats;             // Detection statistics
+
+  // === Methods ===
+  detectWallets: () => Promise<DetectedWallet[]>;  // Manually trigger detection
+  resetDetectionState: () => void;                 // Reset detection state
+  getWalletInfo: (walletId: string) => DetectedWallet | null;
+  isWalletAvailable: (walletId: string) => boolean;
+  getAvailableWallets: () => string[];
+
+  // === Event Listeners ===
+  onWalletDetected: (callback: (result: DetectedWallet) => void) => void;
+  onDetectionComplete: (callback: (results: DetectedWallet[]) => void) => void;
+  onAvailableWallets: (callback: (wallets: string[]) => void) => void;
+  removeAllListeners: () => void;
+}
+
+interface DetectedWallet {
+  walletId: string;
+  name: string;
+  isAvailable: boolean;
+}
+
+interface WalletDetectionStats {
+  totalScans: number;           // Total number of scans performed
+  successfulDetections: number; // Number of successful detections
+  lastScanDuration: number;     // Duration of last scan (ms)
+  averageScanDuration: number;  // Average scan duration (ms)
+  detectedWalletCount: number;  // Number of detected wallets
+}
+```
+
+**Example:**
+```tsx
+import { useWalletDetection } from '@btc-connect/react';
+
+function WalletDetectionExample() {
+  const {
+    isDetecting,
+    detectedWallets,
+    detectionComplete,
+    stats,
+    detectWallets,
+    onWalletDetected,
+    onDetectionComplete
+  } = useWalletDetection();
+
+  // Listen for wallet detection events
+  onWalletDetected((wallet) => {
+    console.log('Wallet detected:', wallet.name);
+  });
+
+  onDetectionComplete((wallets) => {
+    console.log('Detection complete:', wallets.length, 'wallets found');
+  });
+
+  return (
+    <div>
+      <h3>Wallet Detection</h3>
+      <p>Status: {isDetecting ? 'Detecting...' : 'Idle'}</p>
+      <p>Complete: {detectionComplete ? 'Yes' : 'No'}</p>
+      <p>Total Scans: {stats.totalScans}</p>
+      <p>Average Duration: {stats.averageScanDuration}ms</p>
+
+      <button onClick={detectWallets} disabled={isDetecting}>
+        {isDetecting ? 'Detecting...' : 'Detect Wallets'}
+      </button>
+
+      <ul>
+        {detectedWallets.map((wallet) => (
+          <li key={wallet.walletId}>
+            {wallet.name} - {wallet.isAvailable ? 'Available' : 'Not Available'}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+### useWalletManager
+
+Hook for accessing and managing wallet adapters. Provides direct access to the underlying wallet manager for advanced use cases.
+
+**Returns:**
+```typescript
+interface UseWalletManagerReturn {
+  currentAdapter: BTCWalletAdapter | null;     // Currently active adapter
+  availableAdapters: BTCWalletAdapter[];       // All available adapters
+  adapterStates: Record<string, WalletState>;  // State of each adapter
+  getAdapter: (walletId: string) => BTCWalletAdapter | null;
+  addAdapter: (adapter: BTCWalletAdapter) => void;
+  removeAdapter: (walletId: string) => void;
+  manager: BTCWalletManager;                   // Direct manager access
+}
+```
+
+**Example:**
+```tsx
+import { useWalletManager } from '@btc-connect/react';
+
+function WalletManagerExample() {
+  const {
+    currentAdapter,
+    availableAdapters,
+    adapterStates,
+    getAdapter,
+    manager
+  } = useWalletManager();
+
+  // Get specific adapter
+  const unisatAdapter = getAdapter('unisat');
+
+  // Check adapter state
+  const adapterState = adapterStates['unisat'];
+
+  return (
+    <div>
+      <p>Current Adapter: {currentAdapter?.name || 'None'}</p>
+      <p>Available Adapters: {availableAdapters.length}</p>
+      {availableAdapters.map((adapter) => (
+        <div key={adapter.id}>
+          <span>{adapter.name}</span>
+          <span>State: {adapterStates[adapter.id]?.status}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### useWalletModalEnhanced
+
+Enhanced hook for wallet modal management with source tracking, configuration, and advanced operations.
+
+**Returns:**
+```typescript
+interface UseWalletModalEnhancedReturn {
+  // === State ===
+  isOpen: boolean;
+  openSource: string | null;     // Where the modal was opened from
+  openCount: number;             // Number of times modal was opened
+  config: ModalConfig;           // Current modal configuration
+  modalState: ModalState;        // Complete modal state
+
+  // === Methods ===
+  open: () => void;
+  close: () => void;
+  toggle: () => void;
+  openWithSource: (source: string) => void;  // Open with source tracking
+  forceClose: () => void;                     // Force close (ignores config)
+  setConfig: (config: Partial<ModalConfig>) => void;
+}
+
+interface ModalConfig {
+  closeOnEscape?: boolean;        // Close on ESC key (default: true)
+  closeOnOutsideClick?: boolean;  // Close on outside click (default: true)
+  showCloseButton?: boolean;      // Show close button (default: true)
+  preventBodyScroll?: boolean;    // Prevent body scroll (default: true)
+  animationDuration?: number;     // Animation duration in ms (default: 300)
+}
+```
+
+**Example:**
+```tsx
+import { useWalletModalEnhanced } from '@btc-connect/react';
+
+function ModalExample() {
+  const {
+    isOpen,
+    open,
+    close,
+    openWithSource,
+    forceClose,
+    openSource,
+    openCount,
+    config,
+    setConfig
+  } = useWalletModalEnhanced();
+
+  return (
+    <div>
+      <p>Modal is {isOpen ? 'open' : 'closed'}</p>
+      <p>Opened from: {openSource || 'unknown'}</p>
+      <p>Open count: {openCount}</p>
+
+      <button onClick={() => openWithSource('header-button')}>
+        Open from Header
+      </button>
+
+      <button onClick={open}>Open (default)</button>
+      <button onClick={close}>Close</button>
+      <button onClick={forceClose}>Force Close</button>
+
+      <button onClick={() => setConfig({
+        closeOnEscape: false,
+        animationDuration: 500
+      })}>
+        Update Config
+      </button>
+    </div>
+  );
 }
 ```
 

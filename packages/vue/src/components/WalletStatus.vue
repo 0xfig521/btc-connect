@@ -133,6 +133,46 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * WalletStatus Component
+ *
+ * Displays connected wallet status with balance, address, and dropdown menu.
+ * Provides quick access to copy address, refresh balance, and disconnect.
+ *
+ * @component
+ *
+ * @props {Object} props - Component props
+ * @props {'light' | 'dark' | 'auto'} props.theme - Theme mode (default: 'light')
+ * @props {'sm' | 'md' | 'lg'} props.size - Component size (default: 'md')
+ * @props {boolean} props.showBalance - Show balance (default: true)
+ * @props {boolean} props.showAddress - Show address (default: true)
+ * @props {number} props.balancePrecision - Balance decimal places (default: 8)
+ *
+ * @emits disconnect - Emitted when wallet disconnects
+ * @emits error - Emitted when an error occurs
+ * @emits addressCopied - Emitted when address is copied
+ * @emits balanceRefreshed - Emitted when balance is refreshed
+ *
+ * @example
+ * ```vue
+ * <template>
+ *   <WalletStatus
+ *     theme="dark"
+ *     show-balance
+ *     show-address
+ *     @disconnect="handleDisconnect"
+ *   />
+ * </template>
+ *
+ * <script setup>
+ * import { WalletStatus } from '@btc-connect/vue';
+ *
+ * const handleDisconnect = () => {
+ *   console.log('Wallet disconnected');
+ * };
+ * </script>
+ * ```
+ */
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import type { ComponentSize, ThemeMode } from '../types';
 import { isClient } from '../index';

@@ -109,6 +109,27 @@ Modal component for wallet selection and connection management.
 - `onClose?: () => void` - Close callback
 - `onConnect?: (walletId: string) => void` - Connection callback
 
+## Composables API
+
+### Composables Overview
+
+| Composable | Description | Main Returns |
+|------------|-------------|--------------|
+| `useWallet()` | Primary composable - unified access point | All wallet functionality |
+| `useWalletEvent()` | Event listening with auto-cleanup | `on`, `once`, `off`, `clear` |
+| `useWalletManager()` | Manager access | `currentAdapter`, `availableAdapters`, `adapterStates` |
+| `useWalletManagerAdvanced()` | Advanced manager operations | `connectMultiple`, `disconnectAll`, `healthCheck` |
+| `useCore()` | Core functionality | `manager`, `state`, `isConnected` |
+| `useNetwork()` | Network management | `network`, `switchNetwork` |
+| `useWalletModal()` | Modal control | `isOpen`, `open`, `close` |
+| `useAccount()` | Account information | `accounts`, `currentAccount`, `balance` |
+| `useBalance()` | Balance management | `balance`, `refreshBalance` |
+| `useSignature()` | Signing operations | `signMessage`, `signPsbt` |
+| `useTransactions()` | Transaction operations | `sendBitcoin`, `sendBitcoinAdvanced` |
+| `useWalletDetection()` | Wallet detection | `isDetecting`, `detectionStats` |
+| `useWalletInfo()` | Wallet information | `currentWallet`, `availableWallets` |
+| `useConnectWallet()` | Connection operations | `connect`, `disconnect`, `switchWallet` |
+
 ## Vue Composables
 
 ### useWallet - Unified Composable
@@ -203,6 +224,265 @@ interface UseWalletModalReturn {
   currentWalletId: Ref<string | null>;
   modalSource: Ref<string | null>;
 }
+```
+
+### useWalletManager
+
+Composable for accessing the underlying wallet manager and adapter management.
+
+**Returns:**
+```typescript
+interface UseWalletManagerReturn {
+  currentAdapter: ComputedRef<BTCWalletAdapter | null>;
+  availableAdapters: ComputedRef<BTCWalletAdapter[]>;
+  adapterStates: ComputedRef<Record<string, WalletState>>;
+  getAdapter: (walletId: string) => BTCWalletAdapter | null;
+  addAdapter: (adapter: BTCWalletAdapter) => void;
+  removeAdapter: (walletId: string) => boolean;
+  manager: Ref<BTCWalletManager | null>;
+}
+```
+
+**Example:**
+```vue
+<script setup>
+import { useWalletManager } from '@btc-connect/vue'
+
+const {
+  currentAdapter,
+  availableAdapters,
+  adapterStates,
+  getAdapter,
+  addAdapter,
+  removeAdapter
+} = useWalletManager()
+
+// Get UniSat adapter
+const unisatAdapter = getAdapter('unisat')
+
+// Add custom adapter
+const addCustomAdapter = () => {
+  const customAdapter = createMyCustomAdapter()
+  addAdapter(customAdapter)
+}
+</script>
+```
+
+### useWalletManagerAdvanced
+
+Advanced composable for batch operations and health monitoring.
+
+**Returns:**
+```typescript
+interface UseWalletManagerAdvancedReturn {
+  // Batch Operations
+  connectMultiple: (walletIds: string[]) => Promise<Array<{
+    walletId: string;
+    success: boolean;
+    error?: string;
+  }>>;
+  disconnectAll: () => Promise<Array<{
+    walletId: string;
+    success: boolean;
+    error?: string;
+  }>>;
+  switchAllToNetwork: (network: string) => Promise<Array<{
+    walletId: string;
+    success: boolean;
+    error?: string;
+  }>>;
+
+  // Health & Monitoring
+  healthCheck: () => Promise<{
+    status: 'healthy' | 'warning' | 'error';
+    message: string;
+    details: Array<{
+      walletId: string;
+      status: string;
+      issues: string[];
+    }>;
+  }>;
+  adapterMonitor: () => {
+    totalAdapters: number;
+    readyAdapters: number;
+    connectedAdapters: number;
+    adaptersWithErrors: number;
+    currentAdapter: string | null;
+    timestamp: string;
+  };
+
+  // Inherited from useWalletManager
+  currentAdapter: ComputedRef<BTCWalletAdapter | null>;
+  availableAdapters: ComputedRef<BTCWalletAdapter[]>;
+  adapterStates: ComputedRef<Record<string, WalletState>>;
+  manager: Ref<BTCWalletManager | null>;
+}
+```
+
+**Example:**
+```vue
+<script setup>
+import { useWalletManagerAdvanced } from '@btc-connect/vue'
+
+const {
+  connectMultiple,
+  disconnectAll,
+  switchAllToNetwork,
+  healthCheck,
+  adapterMonitor
+} = useWalletManagerAdvanced()
+
+// Connect multiple wallets at once
+const connectWallets = async () => {
+  const results = await connectMultiple(['unisat', 'okx'])
+  console.log('Connection results:', results)
+}
+
+// Disconnect all wallets
+const disconnectAllWallets = async () => {
+  const results = await disconnectAll()
+  console.log('Disconnect results:', results)
+}
+
+// Switch all wallets to testnet
+const switchToTestnet = async () => {
+  const results = await switchAllToNetwork('testnet')
+  console.log('Network switch results:', results)
+}
+
+// Check adapter health
+const checkHealth = async () => {
+  const health = await healthCheck()
+  console.log('Health status:', health.status)
+  console.log('Details:', health.details)
+}
+
+// Get adapter statistics
+const getStats = () => {
+  const stats = adapterMonitor()
+  console.log('Adapter stats:', stats)
+}
+</script>
+```
+
+### useWalletInfo
+
+Composable for accessing current wallet and available wallets information.
+
+**Returns:**
+```typescript
+interface UseWalletInfoReturn {
+  currentWallet: ComputedRef<WalletInfo | null>;
+  availableWallets: ComputedRef<WalletInfo[]>;
+  hasWallets: ComputedRef<boolean>;
+}
+```
+
+**Example:**
+```vue
+<script setup>
+import { useWalletInfo } from '@btc-connect/vue'
+
+const { currentWallet, availableWallets, hasWallets } = useWalletInfo()
+
+// Display current wallet info
+const walletName = computed(() => currentWallet.value?.name || 'Not connected')
+
+// List all available wallets
+const walletList = computed(() => availableWallets.value.map(w => ({
+  id: w.id,
+  name: w.name,
+  icon: w.icon
+})))
+</script>
+
+<template>
+  <div>
+    <p>Current: {{ walletName }}</p>
+    <p v-if="hasWallets">Available wallets: {{ walletList.length }}</p>
+  </div>
+</template>
+```
+
+### useWalletDetection
+
+Composable for wallet detection with event-driven real-time status updates.
+
+**Returns:**
+```typescript
+interface UseWalletDetectionReturn {
+  // State
+  isDetecting: ComputedRef<boolean>;
+  availableWallets: ComputedRef<WalletInfo[]>;
+  detectedWallets: ComputedRef<string[]>;
+  isComplete: ComputedRef<boolean>;
+  elapsedTime: ComputedRef<number>;
+  lastDetectionTime: ComputedRef<number | null>;
+  detectionStats: ComputedRef<{
+    totalWallets: number;
+    detectedWallets: number;
+    detectionRate: number;
+    averageDetectionTime: number;
+    isOptimal: boolean;
+  }>;
+
+  // Methods
+  isWalletDetected: (walletId: string) => boolean;
+  getWalletDetectionTime: (walletId: string) => number | null;
+  startDetection: () => Promise<void>;
+  stopDetection: () => void;
+  restartDetection: () => Promise<void>;
+}
+```
+
+**Example:**
+```vue
+<script setup>
+import { useWalletDetection } from '@btc-connect/vue'
+
+const {
+  isDetecting,
+  detectedWallets,
+  isComplete,
+  elapsedTime,
+  detectionStats,
+  isWalletDetected,
+  startDetection,
+  stopDetection,
+  restartDetection
+} = useWalletDetection()
+
+// Check if specific wallet is detected
+const isUnisatDetected = computed(() => isWalletDetected('unisat'))
+
+// Manual detection control
+const handleStartDetection = async () => {
+  await startDetection()
+}
+
+const handleStopDetection = () => {
+  stopDetection()
+}
+
+// Display detection progress
+const detectionProgress = computed(() => {
+  const stats = detectionStats.value
+  return `${stats.detectedWallets}/${stats.totalWallets} wallets (${stats.detectionRate.toFixed(1)}%)`
+})
+</script>
+
+<template>
+  <div>
+    <p v-if="isDetecting">Detecting wallets... ({{ elapsedTime }}ms)</p>
+    <p v-else-if="isComplete">Detection complete: {{ detectionProgress }}</p>
+    
+    <p>Optimal: {{ detectionStats.isOptimal ? 'Yes' : 'No' }}</p>
+    
+    <button @click="handleStartDetection" :disabled="isDetecting">Start Detection</button>
+    <button @click="handleStopDetection" :disabled="!isDetecting">Stop Detection</button>
+    <button @click="restartDetection">Restart Detection</button>
+  </div>
+</template>
 ```
 
 ## API Reference

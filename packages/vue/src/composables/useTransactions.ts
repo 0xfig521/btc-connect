@@ -7,7 +7,7 @@ import type {
 } from '@btc-connect/core';
 
 /**
- * 交易状态接口
+ * Transaction state interface
  */
 export interface TransactionState {
   isLoading: boolean;
@@ -17,7 +17,7 @@ export interface TransactionState {
 }
 
 /**
- * PSBT选项接口
+ * PSBT options interface
  */
 export interface PsbtOptions {
   autoFinalize?: boolean;
@@ -26,7 +26,7 @@ export interface PsbtOptions {
 }
 
 /**
- * 交易结果接口
+ * Transaction result interface
  */
 export interface TransactionResult {
   txid: string;
@@ -35,7 +35,60 @@ export interface TransactionResult {
 }
 
 /**
- * 使用交易功能的Composable
+ * Transaction operations Composable
+ *
+ * Provides comprehensive Bitcoin transaction functionality including sending,
+ * signing PSBTs, and transaction history management.
+ *
+ * @returns Transaction methods and state
+ * @returns {Ref<TransactionState>} returns.transactionState - Current transaction state
+ * @returns {Ref<BalanceInfo | null>} returns.balance - Current balance info
+ * @returns {Ref<any[]>} returns.utxos - Available UTXOs
+ * @returns {Ref<TransactionInput[]>} returns.transactions - Transaction history
+ * @returns {ComputedRef<boolean>} returns.isSending - Whether a transaction is in progress
+ * @returns {ComputedRef<string | null>} returns.error - Transaction error message
+ * @returns {(toAddress: string, amount: number) => Promise<string>} returns.sendBitcoin - Send Bitcoin to an address
+ * @returns {(psbt: string) => Promise<string>} returns.sendTransaction - Send transaction (compatibility method)
+ * @returns {(toAddress: string, satoshis: number, options?: SendBitcoinOptions) => Promise<string>} returns.sendBitcoinAdvanced - Advanced Bitcoin sending
+ * @returns {(psbtHex: string, options?: PsbtOptions) => Promise<TransactionResult>} returns.signPsbt - Sign a PSBT
+ * @returns {(psbtHexs: string[], options?: PsbtOptions) => Promise<TransactionResult[]>} returns.signPsbts - Sign multiple PSBTs
+ * @returns {(rawTx: string) => Promise<string>} returns.broadcastTransaction - Broadcast a raw transaction
+ * @returns {() => Promise<BalanceInfo | null>} returns.fetchBalance - Fetch current balance
+ * @returns {() => Promise<any[]>} returns.fetchUtxos - Fetch available UTXOs
+ * @returns {() => Promise<TransactionInput[]>} returns.fetchTransactionHistory - Fetch transaction history
+ * @returns {(toAddress: string, amount: number, feeRate?: number) => Promise<number>} returns.estimateFee - Estimate transaction fee
+ * @returns {() => void} returns.resetState - Reset transaction state
+ *
+ * @example
+ * ```vue
+ * <script setup>
+ * import { useTransactions } from '@btc-connect/vue';
+ *
+ * const { sendBitcoin, isSending, error, estimateFee } = useTransactions();
+ *
+ * const handleSend = async () => {
+ *   try {
+ *     const fee = await estimateFee('recipientAddress', 10000);
+ *     console.log('Estimated fee:', fee);
+ *
+ *     const txid = await sendBitcoin('recipientAddress', 10000);
+ *     console.log('Transaction sent:', txid);
+ *   } catch (err) {
+ *     console.error('Send failed:', error.value);
+ *   }
+ * };
+ * </script>
+ *
+ * <template>
+ *   <button @click="handleSend" :disabled="isSending">
+ *     {{ isSending ? 'Sending...' : 'Send Bitcoin' }}
+ *   </button>
+ * </template>
+ * ```
+ */
+
+/**
+ * Use transaction functionality Composable
  */
 export function useTransactions() {
   const { manager } = useWalletContext();
@@ -62,7 +115,7 @@ export function useTransactions() {
   const error = computed(() => transactionState.value.error);
 
   /**
-   * 基础比特币转账
+   * Basic Bitcoin transfer
    */
   const sendBitcoin = async (
     toAddress: string,
@@ -118,7 +171,7 @@ export function useTransactions() {
   };
 
   /**
-   * 高级比特币转账（支持更多选项）
+   * Advanced Bitcoin transfer (with more options)
    */
   const sendBitcoinAdvanced = async (
     toAddress: string,
@@ -156,7 +209,7 @@ export function useTransactions() {
   };
 
   /**
-   * 签名PSBT
+   * Sign PSBT
    */
   const signPsbt = async (
     psbtHex: string,
@@ -210,7 +263,7 @@ export function useTransactions() {
   };
 
   /**
-   * 批量签名PSBT
+   * Batch sign PSBTs
    */
   const signPsbts = async (
     psbtHexs: string[],
@@ -260,7 +313,7 @@ export function useTransactions() {
   };
 
   /**
-   * 广播原始交易
+   * Broadcast raw transaction
    */
   const broadcastTransaction = async (rawTx: string): Promise<string> => {
     if (!manager.value) {
@@ -291,7 +344,7 @@ export function useTransactions() {
   };
 
   /**
-   * 获取余额
+   * Fetch balance
    */
   const fetchBalance = async (): Promise<BalanceInfo | null> => {
     if (!manager.value) {
@@ -315,7 +368,7 @@ export function useTransactions() {
   };
 
   /**
-   * 获取UTXO
+   * Fetch UTXOs
    */
   const fetchUtxos = async (): Promise<any[]> => {
     if (!manager.value) {
@@ -339,7 +392,7 @@ export function useTransactions() {
   };
 
   /**
-   * 获取交易历史
+   * Fetch transaction history
    */
   const fetchTransactionHistory = async (): Promise<TransactionInput[]> => {
     if (!manager.value) {
@@ -363,7 +416,7 @@ export function useTransactions() {
   };
 
   /**
-   * 估算交易费用
+   * Estimate transaction fee
    */
   const estimateFee = async (
     toAddress: string,
@@ -390,7 +443,7 @@ export function useTransactions() {
   };
 
   /**
-   * 重置状态
+   * Reset state
    */
   const resetState = (): void => {
     transactionState.value = {

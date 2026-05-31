@@ -20,10 +20,6 @@
 ### 1. 安装依赖
 
 ```bash
-npm install @btc-connect/vue
-# 或
-yarn add @btc-connect/vue
-# 或
 bun add @btc-connect/vue
 ```
 
@@ -74,6 +70,7 @@ import { computed } from 'vue';
 import { useWallet } from '@btc-connect/vue';
 import { ConnectButton } from '#components';
 
+// v0.5.x 统一 API - 单一访问点获取所有功能
 const {
   isConnected,
   address,
@@ -81,9 +78,11 @@ const {
   currentWallet,
   network,
   disconnect,
-  utils
+  utils,
+  useWalletEvent
 } = useWallet();
 
+// 使用内置工具函数格式化
 const formattedAddress = computed(() =>
   utils.formatAddress(address.value || '', { startChars: 6, endChars: 4 })
 );
@@ -92,9 +91,14 @@ const formattedBalance = computed(() =>
   utils.formatBalance(balance.value || 0, { unit: 'BTC' })
 );
 
-const handleConnect = (walletId: string) => {
-  console.log('连接到钱包:', walletId);
-};
+// v0.5.x 事件监听 - 自动清理
+useWalletEvent('connect', (accounts) => {
+  console.log('连接到钱包:', accounts);
+});
+
+useWalletEvent('error', (error) => {
+  console.error('钱包错误:', error.message);
+});
 </script>
 ```
 
@@ -314,22 +318,22 @@ export default defineNuxtPlugin((nuxtApp) => {
 `plugins/wallet-composables.client.ts`：
 
 ```typescript
-import { useWallet, useWalletEvent, useWalletManager } from '@btc-connect/vue';
+import { useWallet, useWalletEvent, useWalletManagerAdvanced } from '@btc-connect/vue';
 
 export default defineNuxtPlugin((nuxtApp) => {
-  // 提供便捷的组合式函数
+  // v0.5.x 统一 API
   const wallet = useWallet();
 
   // 全局错误处理
-  useWalletEvent('error', (error) => {
+  wallet.useWalletEvent('error', (error) => {
     console.error('Wallet error:', error);
     // 可以在这里添加错误上报逻辑
   });
 
   // 自动重连逻辑
-  useWalletEvent('disconnect', () => {
-    // 可以在这里添加自动重连逻辑
+  wallet.useWalletEvent('disconnect', () => {
     console.log('Wallet disconnected');
+    // 可以在这里添加自动重连逻辑
   });
 
   // 提供给全局
@@ -428,6 +432,7 @@ import { computed } from 'vue';
 import { useWallet } from '@btc-connect/vue';
 import { copyToClipboard } from '@btc-connect/vue';
 
+// v0.5.x 统一 API
 const {
   isConnected,
   address,
@@ -436,7 +441,8 @@ const {
   network,
   disconnect,
   switchNetwork,
-  utils
+  utils,
+  useWalletEvent
 } = useWallet();
 
 const formattedAddress = computed(() =>
@@ -467,6 +473,11 @@ const handleSwitchNetwork = async () => {
     console.error('网络切换失败:', error);
   }
 };
+
+// v0.5.x 监听网络变化
+useWalletEvent('networkChange', ({ network: newNetwork }) => {
+  console.log('网络已切换到:', newNetwork);
+});
 </script>
 
 <style scoped>
@@ -572,9 +583,10 @@ const handleSwitchNetwork = async () => {
 
 <script setup>
 import { ref } from 'vue';
-import { useWallet, useWalletEvent } from '@btc-connect/vue';
+import { useWallet } from '@btc-connect/vue';
 
-const { network, switchNetwork } = useWallet();
+// v0.5.x 统一 API
+const { network, switchNetwork, useWalletEvent } = useWallet();
 const isSwitching = ref(false);
 
 const networks = [
@@ -583,7 +595,7 @@ const networks = [
   { value: 'regtest', name: '回归测试', status: '本地测试' }
 ];
 
-// 监听网络变化事件
+// v0.5.x 监听网络变化事件
 useWalletEvent('networkChange', ({ network: newNetwork }) => {
   console.log('网络已切换到:', newNetwork);
 });
@@ -773,12 +785,12 @@ const api_secret = config.walletApiSecret;
 
 ```toml
 [build]
-  command = "npm run build"
+  command = "bun run build"
   publish = ".output/public"
 
 [build.environment]
   NODE_VERSION = "18"
-  NPM_VERSION = "9"
+  BUN_VERSION = "latest"
 
 [[redirects]]
   from = "/api/*"
@@ -794,23 +806,26 @@ const api_secret = config.walletApiSecret;
 `Dockerfile`：
 
 ```dockerfile
-FROM node:18-alpine
+FROM oven/bun:1 AS base
 
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm ci
+# 安装依赖
+COPY package*.json bun.lockb ./
+RUN bun install --frozen-lockfile
 
+# 复制源代码
 COPY . .
-RUN npm run build
+
+# 构建
+RUN bun run build
 
 EXPOSE 3000
 
 ENV NUXT_HOST=0.0.0.0
 ENV PORT=3000
 
-CMD ["npm", "start"]
+CMD ["bun", "run", "start"]
 ```
 
 `docker-compose.yml`：
@@ -851,20 +866,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
         with:
-          node-version: '18'
-          cache: 'npm'
+          bun-version: latest
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Run tests
-        run: npm test
+        run: bun test
 
       - name: Build
-        run: npm run build
+        run: bun run build
         env:
           NUXT_PUBLIC_WALLET_API_URL: ${{ secrets.WALLET_API_URL }}
 
@@ -913,9 +927,10 @@ const showTransactions = ref(false);
 ```typescript
 // composables/useWalletOptimized.ts
 import { computed, shallowRef } from 'vue';
-import { useWallet, useWalletEvent } from '@btc-connect/vue';
+import { useWallet } from '@btc-connect/vue';
 
 export function useWalletOptimized() {
+  // v0.5.x 统一 API
   const {
     isConnected,
     address,
@@ -924,7 +939,8 @@ export function useWalletOptimized() {
     network,
     connect,
     disconnect,
-    utils
+    utils,
+    useWalletEvent
   } = useWallet();
 
   // 使用 shallowRef 减少响应式开销
@@ -958,7 +974,7 @@ export function useWalletOptimized() {
     }
   };
 
-  // 事件监听优化
+  // v0.5.x 事件监听优化
   useWalletEvent('connect', () => {
     isLoading.value = false;
     lastError.value = null;
@@ -987,6 +1003,235 @@ export function useWalletOptimized() {
 ```
 
 ### 缓存策略
+
+v0.5.x 提供了内置的缓存系统，可以显著提升性能：
+
+```typescript
+// composables/useWalletWithCache.ts
+import { computed, ref } from 'vue';
+import { useWallet, useWalletManagerAdvanced } from '@btc-connect/vue';
+
+export function useWalletWithCache() {
+  const { address, balance, utils } = useWallet();
+  const { healthCheck, adapterMonitor } = useWalletManagerAdvanced();
+
+  // 缓存配置
+  const cacheConfig = {
+    ttl: 5 * 60 * 1000, // 5分钟缓存
+    maxSize: 100,
+    enableStats: true
+  };
+
+  // 使用工具函数的缓存能力
+  const getCachedBalance = async (addr: string) => {
+    // utils 内部会自动缓存结果
+    return utils.formatBalance(balance.value || 0, { 
+      unit: 'BTC',
+      cache: cacheConfig 
+    });
+  };
+
+  // 批量获取钱包状态（带缓存）
+  const getWalletStats = () => {
+    const stats = adapterMonitor();
+    return {
+      total: stats.totalAdapters,
+      ready: stats.readyAdapters,
+      connected: stats.connectedAdapters,
+      health: stats.adaptersWithErrors === 0 ? 'healthy' : 'warning'
+    };
+  };
+
+  return {
+    getCachedBalance,
+    getWalletStats,
+    healthCheck
+  };
+}
+```
+
+### 批处理操作
+
+v0.5.x 支持批量钱包操作，提升多钱包场景的性能：
+
+```typescript
+// composables/useBatchOperations.ts
+import { useWalletManagerAdvanced } from '@btc-connect/vue';
+
+export function useBatchOperations() {
+  const {
+    connectMultiple,
+    disconnectAll,
+    switchAllToNetwork,
+    healthCheck
+  } = useWalletManagerAdvanced();
+
+  // 批量连接钱包
+  const connectAllWallets = async () => {
+    const results = await connectMultiple(['unisat', 'okx', 'xverse']);
+    
+    const successful = results.filter(r => r.success);
+    const failed = results.filter(r => !r.success);
+    
+    console.log(`成功连接 ${successful.length} 个钱包`);
+    if (failed.length > 0) {
+      console.error('连接失败:', failed);
+    }
+    
+    return { successful, failed };
+  };
+
+  // 批量断开连接
+  const disconnectAllWallets = async () => {
+    const results = await disconnectAll();
+    console.log('所有钱包已断开:', results);
+    return results;
+  };
+
+  // 批量切换网络
+  const switchAllToTestnet = async () => {
+    const results = await switchAllToNetwork('testnet');
+    console.log('网络切换结果:', results);
+    return results;
+  };
+
+  // 健康检查
+  const performHealthCheck = async () => {
+    const health = await healthCheck();
+    
+    if (health.status === 'healthy') {
+      console.log('✅ 所有钱包状态正常');
+    } else if (health.status === 'warning') {
+      console.warn('⚠️ 部分钱包存在问题:', health.details);
+    } else {
+      console.error('❌ 钱包健康检查失败:', health.message);
+    }
+    
+    return health;
+  };
+
+  return {
+    connectAllWallets,
+    disconnectAllWallets,
+    switchAllToTestnet,
+    performHealthCheck
+  };
+}
+```
+
+使用示例：
+
+```vue
+<template>
+  <div>
+    <button @click="handleConnectAll" :disabled="isProcessing">
+      连接所有钱包
+    </button>
+    <button @click="handleHealthCheck" :disabled="isProcessing">
+      健康检查
+    </button>
+    <button @click="handleSwitchNetwork" :disabled="isProcessing">
+      切换到测试网
+    </button>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+import { useBatchOperations } from '~/composables/useBatchOperations';
+
+const {
+  connectAllWallets,
+  switchAllToTestnet,
+  performHealthCheck
+} = useBatchOperations();
+
+const isProcessing = ref(false);
+
+const handleConnectAll = async () => {
+  isProcessing.value = true;
+  try {
+    const { successful, failed } = await connectAllWallets();
+    // 处理结果
+  } finally {
+    isProcessing.value = false;
+  }
+};
+
+const handleHealthCheck = async () => {
+  isProcessing.value = true;
+  try {
+    const health = await performHealthCheck();
+    // 显示健康状态
+  } finally {
+    isProcessing.value = false;
+  }
+};
+
+const handleSwitchNetwork = async () => {
+  isProcessing.value = true;
+  try {
+    await switchAllToTestnet();
+  } finally {
+    isProcessing.value = false;
+  }
+};
+</script>
+```
+
+### 钱包检测优化
+
+v0.5.x 提供增强的钱包检测功能：
+
+```typescript
+// composables/useWalletDetectionOptimized.ts
+import { useWalletDetection } from '@btc-connect/vue';
+
+export function useWalletDetectionOptimized() {
+  const {
+    isDetecting,
+    detectedWallets,
+    isComplete,
+    elapsedTime,
+    detectionStats,
+    isWalletDetected,
+    startDetection,
+    stopDetection
+  } = useWalletDetection();
+
+  // 检测进度
+  const progress = computed(() => {
+    const stats = detectionStats.value;
+    return {
+      percent: stats.detectionRate,
+      text: `${stats.detectedWallets}/${stats.totalWallets}`,
+      isOptimal: stats.isOptimal,
+      avgTime: `${stats.averageDetectionTime.toFixed(0)}ms`
+    };
+  });
+
+  // 智能检测（仅在需要时启动）
+  const smartDetect = async () => {
+    if (!isComplete.value && !isDetecting.value) {
+      await startDetection();
+    }
+    return detectedWallets.value;
+  };
+
+  return {
+    isDetecting,
+    detectedWallets,
+    progress,
+    smartDetect,
+    isWalletDetected,
+    stopDetection
+  };
+}
+```
+
+### 自定义缓存实现
+
+如果需要自定义缓存策略：
 
 ```typescript
 // utils/walletCache.ts
@@ -1059,7 +1304,8 @@ import { ref, computed, watch } from 'vue';
 import { useWallet } from '@btc-connect/vue';
 
 export function useWalletData() {
-  const { isConnected, address } = useWallet();
+  // v0.5.x 统一 API
+  const { isConnected, address, utils } = useWallet();
 
   const balance = ref<number | null>(null);
   const transactions = ref<any[]>([]);
@@ -1093,7 +1339,7 @@ export function useWalletData() {
 
   const formattedBalance = computed(() => {
     if (!balance.value) return '0 BTC';
-    return (balance.value / 100000000).toFixed(8) + ' BTC';
+    return utils.formatBalance(balance.value, { unit: 'BTC' });
   });
 
   return {
@@ -1509,9 +1755,10 @@ definePageMeta({
 
 ```typescript
 import { ref, computed } from 'vue';
-import { useWallet, useWalletEvent } from '@btc-connect/vue';
+import { useWallet } from '@btc-connect/vue';
 
 export function useWalletState() {
+  // v0.5.x 统一 API - 单一访问点
   const {
     isConnected,
     address,
@@ -1520,7 +1767,8 @@ export function useWalletState() {
     network,
     connect,
     disconnect,
-    utils
+    utils,
+    useWalletEvent
   } = useWallet();
 
   const isLoading = ref(false);
@@ -1570,7 +1818,7 @@ export function useWalletState() {
     }
   };
 
-  // 事件监听
+  // v0.5.x 事件监听
   useWalletEvent('connect', () => {
     isLoading.value = false;
     lastError.value = null;

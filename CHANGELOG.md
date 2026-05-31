@@ -5,6 +5,125 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 并且本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/) 规范。
 
+## [0.5.1] - 2026-05-03
+
+### 🎉 重大更新 - 性能与稳定性增强
+
+#### ✨ 新功能
+- **缓存系统**: 新增完整的缓存基础设施
+  - `MemoryCache`: 基础内存缓存实现，支持 TTL 和 LRU 淘汰策略
+  - `CacheManager`: 统一缓存管理器，支持命名空间和批量操作
+  - `EnhancedMemoryCache`: 增强型缓存，支持统计、预热、健康检查
+  - 缓存装饰器: 为适配器方法自动添加缓存层
+- **批处理系统**: 新增 `BatchScheduler` 支持请求合并和批量处理
+- **统一错误处理**: 全新的错误处理架构
+  - `UnifiedError`: 统一错误类型，包含错误码、上下文、恢复策略
+  - `ErrorFactory`: 错误工厂，支持创建标准化错误
+  - `ErrorRecoveryStrategy`: 错误恢复策略枚举（重试、切换钱包、用户操作等）
+
+#### 🔧 API 变更
+- **增强钱包检测**: 实现智能轮询机制，20秒内每300ms检测延迟注入的钱包
+- **版本常量修复**: 修复版本号导出问题，确保 `VERSION` 常量正确可用
+
+#### 🏗️ 架构改进
+- **缓存抽象层**: 所有缓存实现遵循统一接口，便于扩展
+- **错误分类系统**: 错误按类型分类（网络、钱包、用户、系统），便于处理
+- **性能优化**: 减少重复请求，优化内存使用
+
+#### 📦 包版本
+- **@btc-connect/core**: v0.5.1 - 核心缓存和错误处理系统
+- **@btc-connect/react**: v0.5.1 - React 集成，支持缓存优化
+- **@btc-connect/vue**: v0.5.1 - Vue 集成，支持缓存优化
+
+---
+
+## [0.5.0] - 2026-04-15
+
+### 🎉 重大更新 - 统一 Hook API 与智能主题
+
+#### ✨ 新功能
+- **统一 Hook API**: React 和 Vue 包现在提供完全一致的接口
+  - `useWallet`: 成为所有功能的单一访问点
+  - 返回值结构完全一致（Vue 返回 Ref，React 返回普通值）
+  - 统一的错误处理和事件系统
+- **智能主题检测**: 全新的主题管理系统
+  - 支持 `light`、`dark`、`auto` 三种模式
+  - 自动跟随系统主题变化
+  - 主题持久化存储
+- **SSR 兼容性改进**: 完整的服务器端渲染支持
+  - 所有 Hooks/Composables 在 SSR 环境下安全运行
+  - 自动处理 `window` 和 `document` 访问
+  - 水合错误修复
+
+#### 🔧 API 变更
+
+**React 包**:
+```typescript
+// 统一的 useWallet Hook
+const {
+  // 状态
+  status, accounts, currentAccount, network, error,
+  isConnected, isConnecting, address, balance, publicKey,
+  // 操作
+  connect, disconnect, switchWallet, switchNetwork,
+  // 子功能
+  useWalletEvent, walletModal, utils
+} = useWallet();
+
+// 主题管理
+const { theme, setTheme, resolvedTheme } = useTheme();
+```
+
+**Vue 包**:
+```typescript
+// 统一的 useWallet Composable（返回 Ref）
+const {
+  status, accounts, currentAccount, network, error,
+  isConnected, isConnecting, address, balance, publicKey,
+  connect, disconnect, switchWallet, switchNetwork,
+  useWalletEvent, walletModal, utils
+} = useWallet();
+
+// 主题管理
+const { theme, setTheme, resolvedTheme } = useTheme();
+```
+
+#### 🏗️ 架构改进
+- **类型系统统一**: React 和 Vue 共享完全相同的类型定义
+- **核心包增强**: 新增跨框架工具函数和类型
+- **示例项目更新**: Next.js 和 Nuxt 示例展示完整 SSR 方案
+
+#### 🧪 测试覆盖
+- **核心包**: 缓存系统完整测试
+- **React 包**: Hook 测试套件更新
+- **Vue 包**: Composable 测试套件更新
+- **集成测试**: 跨框架 API 一致性验证
+
+#### 📦 包版本
+- **@btc-connect/core**: v0.5.0 - 统一类型和工具函数
+- **@btc-connect/react**: v0.5.0 - 统一 Hook API
+- **@btc-connect/vue**: v0.5.0 - 统一 Composable API
+
+#### 🔄 迁移指南
+
+**从 v0.4.x 迁移**:
+```typescript
+// v0.4.x
+import { useWallet, useAccount } from '@btc-connect/react';
+const { connect } = useWallet();
+const { address } = useAccount();
+
+// v0.5.0+
+import { useWallet } from '@btc-connect/react';
+const { connect, address } = useWallet();
+```
+
+#### ⚠️ 破坏性变更
+- `useAccount` Hook/Composable 已废弃，功能集成到 `useWallet`
+- 主题 API 重构，旧的主题属性可能需要更新
+
+---
+
 ## [0.4.0] - 2025-11-01
 
 ### 🎉 重大更新 - React/Vue 包统一

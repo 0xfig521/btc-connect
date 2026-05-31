@@ -69,19 +69,19 @@ Choose the package that matches your framework:
 ### Core (Framework Agnostic)
 
 ```bash
-npm install @btc-connect/core
+bun add @btc-connect/core
 ```
 
 ### React
 
 ```bash
-npm install @btc-connect/react
+bun add @btc-connect/react
 ```
 
 ### Vue
 
 ```bash
-npm install @btc-connect/vue
+bun add @btc-connect/vue
 ```
 
 ## 🎯 Quick Start
@@ -91,13 +91,13 @@ npm install @btc-connect/vue
 1. **安装包**
 ```bash
 # React
-npm install @btc-connect/react
+bun add @btc-connect/react
 
 # Vue
-npm install @btc-connect/vue
+bun add @btc-connect/vue
 
 # 核心 (框架无关)
-npm install @btc-connect/core
+bun add @btc-connect/core
 ```
 
 2. **基础使用**
@@ -185,18 +185,11 @@ const { isConnected, address, balance, connect, disconnect } = useWallet();
 
 ### 🏗️ 项目示例
 - [React示例](./examples/react/) - 基础React集成示例
-- [Vue示例](./examples/vue-example/) - 基础Vue集成示例
-- [Next.js示例](./examples/nextjs/) - Next.js SSR完整示例
 - [Nuxt.js示例](./examples/nuxt-example/) - Nuxt 3 SSR完整示例
+- [Next.js示例](./examples/nextjs/) - Next.js SSR完整示例
 
 ### 🔄 迁移和更新
 - [📝 变更日志](./CHANGELOG.md) - 完整版本变更记录
-
-### 🏗️ 项目示例
-- [React示例](./examples/react/) - 基础React集成示例
-- [Vue示例](./examples/vue-example/) - 基础Vue集成示例
-- [Next.js示例](./examples/nextjs/) - Next.js SSR完整示例
-- [Nuxt.js示例](./examples/nuxt-example/) - Nuxt 3 SSR完整示例
 
 ## 🏗️ Project Structure
 
@@ -208,7 +201,7 @@ btc-connect/
 │   └── vue/           # Vue integration
 ├── examples/          # Usage examples
 │   ├── react/         # React example
-│   ├── vue-example/   # Vue example
+│   ├── nuxt-example/  # Nuxt 3 SSR example
 │   └── nextjs/        # Next.js SSR example
 └── docs/             # Additional documentation
 ```

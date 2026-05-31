@@ -152,7 +152,36 @@ declare global {
 }
 
 /**
- * UniSat钱包适配器 - 完整实现所有 Unisat API
+ * UniSat wallet adapter implementing the full UniSat API.
+ * Provides comprehensive support for Bitcoin wallet operations including
+ * inscriptions, Runes, BRC-20, and PSBT signing.
+ *
+ * @example
+ * ```typescript
+ * import { UniSatAdapter } from '@btc-connect/core';
+ *
+ * const adapter = new UniSatAdapter();
+ *
+ * // Check if UniSat is installed
+ * if (adapter.isReady()) {
+ *   // Connect to wallet
+ *   const accounts = await adapter.connect();
+ *   console.log('Connected:', accounts[0].address);
+ *
+ *   // Get balance
+ *   const balance = await adapter.getBalance();
+ *   console.log('Balance:', balance.total);
+ *
+ *   // Sign message
+ *   const signature = await adapter.signMessage('Hello');
+ *
+ *   // Send Bitcoin
+ *   const txId = await adapter.sendBitcoin('tb1q...', 10000);
+ *
+ *   // Get inscriptions
+ *   const inscriptions = await adapter.getInscriptions({ cursor: 0, size: 10 });
+ * }
+ * ```
  */
 export class UniSatAdapter extends BaseWalletAdapter {
   readonly id = 'unisat';

@@ -3,7 +3,34 @@ import { useWalletContext } from '../context/provider';
 import type { BalanceDetail } from '../types';
 
 /**
- * 使用余额信息的Hook
+ * Hook for accessing balance information with refresh capability.
+ * Provides balance details and method to refresh balance from wallet.
+ *
+ * @returns Object with balance information
+ * @returns {BalanceDetail|null} balance - Full balance details
+ * @returns {boolean} isLoading - Whether balance is being loaded
+ * @returns {Function} refreshBalance - Refresh balance from wallet
+ * @returns {number} confirmedBalance - Confirmed balance in satoshis
+ * @returns {number} unconfirmedBalance - Unconfirmed balance in satoshis
+ * @returns {number} totalBalance - Total balance in satoshis
+ *
+ * @example
+ * ```tsx
+ * import { useBalance } from '@btc-connect/react';
+ *
+ * function BalanceDisplay() {
+ *   const { balance, isLoading, refreshBalance } = useBalance();
+ *
+ *   return (
+ *     <div>
+ *       <p>Total: {balance?.total || 0} sats</p>
+ *       <button onClick={refreshBalance} disabled={isLoading}>
+ *         {isLoading ? 'Loading...' : 'Refresh'}
+ *       </button>
+ *     </div>
+ *   );
+ * }
+ * ```
  */
 export function useBalance() {
   const ctx = useWalletContext();

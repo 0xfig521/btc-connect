@@ -1,91 +1,95 @@
 'use client';
 
-import {
-  useAccount,
-  useNetwork,
-  useSignature,
-  useWallet,
-} from '@btc-connect/react';
-import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { BTCWalletProvider, ConnectButton, useWallet } from '@btc-connect/react';
 
-// Next.js 客户端组件示例
-export default function NextJsWalletExample() {
-  // SSR 防护：确保客户端渲染
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+// 动态导入避免 SSR 问题
+const WalletPanel = dynamic(() => Promise.resolve(WalletPanelInner), {
+  ssr: false,
+  loading: () => <div>Loading wallet...</div>,
+});
 
-  if (!mounted) {
-    return <div>Loading...</div>;
-  }
+// 页面组件
+export default function WalletPage() {
+  return (
+    <BTCWalletProvider autoConnect>
+      <WalletPanel />
+    </BTCWalletProvider>
+  );
+}
 
-  // React Hooks 使用（与React示例相同）
+// 钱包面板 - 使用统一 useWallet() API
+function WalletPanelInner() {
   const {
-    wallet,
     isConnected,
-    isConnecting,
+    address,
+    balance,
+    network,
     connect,
     disconnect,
-    currentWallet,
+    switchNetwork,
+    signMessage,
+    walletModal,
+    availableWallets,
   } = useWallet();
 
-  const { network, switchNetwork, isSwitching } = useNetwork();
-
-  const { account, getBalance } = useAccount();
-  const { signMessage } = useSignature();
-
-  // 连接钱包
   const handleConnect = async (walletId: string) => {
     try {
-      const accounts = await connect(walletId);
-      console.log('连接成功:', accounts);
+      await connect(walletId);
     } catch (error) {
       console.error('连接失败:', error);
     }
   };
 
-  // 网络切换
   const handleSwitchNetwork = async (
     targetNetwork: 'livenet' | 'testnet' | 'regtest',
   ) => {
     try {
       await switchNetwork(targetNetwork);
-      console.log('网络切换成功');
     } catch (error) {
       console.error('网络切换失败:', error);
-      if (currentWallet?.id === 'okx') {
-        console.log('OKX 钱包需要在钱包中手动切换网络');
-      }
     }
   };
 
-  // 消息签名
   const handleSignMessage = async (message: string) => {
     try {
-      const signature = await signMessage(message);
-      console.log('签名成功:', signature);
-      return signature;
+      return await signMessage(message);
     } catch (error) {
       console.error('签名失败:', error);
     }
   };
 
-  return {
-    // 状态
-    isConnected,
-    isConnecting,
-    isSwitching,
-    network,
-    wallet,
-    currentWallet,
-    account,
+  return (
+    <div>
+      <ConnectButton />
 
-    // 操作方法
-    connect: handleConnect,
-    disconnect,
-    switchNetwork: handleSwitchNetwork,
-    signMessage: handleSignMessage,
-    getBalance,
-  };
+      {!isConnected ? (
+        <div>
+          {availableWallets.map((wallet) => (
+            <button key={wallet.id} onClick={() => handleConnect(wallet.id)}>
+              连接 {wallet.name}
+            </button>
+          ))}
+          <button onClick={() => walletModal.openModal()}>
+            选择钱包
+          </button>
+        </div>
+      ) : (
+        <div>
+          <p>地址: {address}</p>
+          <p>余额: {balance} satoshis</p>
+          <p>网络: {network}</p>
+
+          <button onClick={() => handleSwitchNetwork('livenet')}>主网</button>
+          <button onClick={() => handleSwitchNetwork('testnet')}>测试网</button>
+
+          <button onClick={() => handleSignMessage('Hello, Bitcoin!')}>
+            签名消息
+          </button>
+
+          <button onClick={disconnect}>断开连接</button>
+        </div>
+      )}
+    </div>
+  );
 }

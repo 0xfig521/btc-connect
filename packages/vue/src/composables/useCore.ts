@@ -1,7 +1,47 @@
 /**
- * 核心钱包功能 Composable
+ * Core wallet functionality Composable
  *
- * 提供对钱包管理器的核心访问，包含错误处理和性能优化
+ * Provides core access to the wallet manager with error handling and performance optimization.
+ * This is the foundation composable that other wallet composables build upon.
+ *
+ * @returns {UseCoreReturn} Object containing manager, state, and connection methods
+ * @returns {Ref<BTCWalletManager | null>} returns.manager - Wallet manager instance
+ * @returns {ComputedRef<WalletState>} returns.state - Current wallet state
+ * @returns {ComputedRef<boolean>} returns.isConnected - Whether wallet is connected
+ * @returns {ComputedRef<boolean>} returns.isConnecting - Whether wallet is connecting
+ * @returns {ComputedRef<WalletInfo | null>} returns.currentWallet - Current wallet info
+ * @returns {Ref<WalletInfo[]>} returns.availableWallets - List of available wallets
+ * @returns {(walletId: string) => Promise<AccountInfo[]>} returns.connect - Connect to a wallet
+ * @returns {() => Promise<void>} returns.disconnect - Disconnect current wallet
+ * @returns {(walletId: string) => Promise<AccountInfo[]>} returns.switchWallet - Switch to another wallet
+ *
+ * @example
+ * ```vue
+ * <script setup>
+ * import { useCore } from '@btc-connect/vue';
+ *
+ * const { isConnected, connect, disconnect, availableWallets } = useCore();
+ *
+ * const handleConnect = async (walletId: string) => {
+ *   try {
+ *     const accounts = await connect(walletId);
+ *     console.log('Connected:', accounts);
+ *   } catch (error) {
+ *     console.error('Connection failed:', error);
+ *   }
+ * };
+ * </script>
+ *
+ * <template>
+ *   <div>
+ *     <p>Status: {{ isConnected ? 'Connected' : 'Disconnected' }}</p>
+ *     <button v-for="wallet in availableWallets" :key="wallet.id" @click="handleConnect(wallet.id)">
+ *       Connect {{ wallet.name }}
+ *     </button>
+ *     <button v-if="isConnected" @click="disconnect">Disconnect</button>
+ *   </div>
+ * </template>
+ * ```
  */
 
 import {
@@ -19,7 +59,9 @@ import type { UseCoreReturn } from '../types';
 import { useWalletContext } from '../walletContext';
 
 /**
- * 使用核心钱包功能的Composable - 提供对manager的访问
+ * Use core wallet functionality Composable - provides access to the wallet manager
+ *
+ * @returns Core wallet functionality including manager, state, and connection methods
  */
 export function useCore(): UseCoreReturn {
   const ctx = useWalletContext();
@@ -185,9 +227,25 @@ export function useCore(): UseCoreReturn {
 }
 
 /**
- * 获取钱包管理器的直接访问（仅用于高级用法）
+ * Get direct access to the wallet manager (for advanced usage only)
  *
- * @warning 直接操作管理器可能跳过 Vue 的响应式系统，请谨慎使用
+ * @returns The BTCWalletManager instance
+ * @throws Error if wallet manager is not initialized
+ *
+ * @warning Direct manipulation of the manager may bypass Vue's reactivity system, use with caution
+ *
+ * @example
+ * ```vue
+ * <script setup>
+ * import { useWalletManager } from '@btc-connect/vue';
+ *
+ * const manager = useWalletManager();
+ *
+ * // Access low-level manager methods
+ * const adapter = manager.getCurrentAdapter();
+ * console.log('Current adapter:', adapter?.name);
+ * </script>
+ * ```
  */
 export function useWalletManager() {
   const ctx = useWalletContext();
@@ -200,10 +258,23 @@ export function useWalletManager() {
 }
 
 /**
- * 钱包状态监听器（用于调试和监控）
+ * Wallet state monitor (for debugging and monitoring)
  *
- * @param callback 状态变化回调
- * @returns 清理函数
+ * @param callback - Callback function invoked when state changes
+ * @returns Cleanup function to stop monitoring
+ *
+ * @example
+ * ```vue
+ * <script setup>
+ * import { useWalletStateMonitor } from '@btc-connect/vue';
+ *
+ * const cleanup = useWalletStateMonitor((newState, prevState) => {
+ *   console.log('State changed:', { newState, prevState });
+ * });
+ *
+ * onUnmounted(cleanup);
+ * </script>
+ * ```
  */
 export function useWalletStateMonitor(
   callback: (state: any, prevState: any) => void,
@@ -235,7 +306,31 @@ export function useWalletStateMonitor(
 }
 
 /**
- * 性能监控 Composable
+ * Performance monitoring Composable
+ *
+ * Provides metrics tracking for wallet operations including connection time
+ * and state update frequency.
+ *
+ * @returns Performance metrics and reset function
+ * @returns {Object} returns.metrics - Performance metrics object
+ * @returns {number} returns.metrics.connectionTime - Last connection duration in ms
+ * @returns {number} returns.metrics.stateUpdateCount - Number of state updates
+ * @returns {number} returns.metrics.lastUpdateTime - Timestamp of last update
+ * @returns {() => void} returns.reset - Reset all metrics
+ *
+ * @example
+ * ```vue
+ * <script setup>
+ * import { usePerformanceMonitor } from '@btc-connect/vue';
+ *
+ * const { metrics, reset } = usePerformanceMonitor();
+ *
+ * // Monitor performance
+ * watch(metrics, (newMetrics) => {
+ *   console.log('State updates:', newMetrics.stateUpdateCount);
+ * });
+ * </script>
+ * ```
  */
 export function usePerformanceMonitor() {
   const config = useConfig();

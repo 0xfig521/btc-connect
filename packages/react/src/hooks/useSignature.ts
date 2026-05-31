@@ -1,5 +1,29 @@
 import { useWalletContext } from '../context/provider';
 
+/**
+ * Hook for signature operations.
+ * Provides methods for signing messages and PSBTs.
+ *
+ * @returns Object with signature methods
+ * @returns {Function} signMessage - Sign a message string
+ * @returns {Function} signPsbt - Sign a PSBT (Partially Signed Bitcoin Transaction)
+ *
+ * @example
+ * ```tsx
+ * import { useSignature } from '@btc-connect/react';
+ *
+ * function SignMessageButton() {
+ *   const { signMessage, signPsbt } = useSignature();
+ *
+ *   const handleSign = async () => {
+ *     const signature = await signMessage('Hello Bitcoin!');
+ *     console.log('Signature:', signature);
+ *   };
+ *
+ *   return <button onClick={handleSign}>Sign Message</button>;
+ * }
+ * ```
+ */
 export function useSignature() {
   const { manager } = useWalletContext();
 

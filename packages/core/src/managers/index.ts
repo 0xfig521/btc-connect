@@ -14,7 +14,45 @@ import type {
 import { WalletError } from '../types';
 
 /**
- * 钱包管理器实现
+ * Central wallet manager for coordinating Bitcoin wallet connections.
+ * Manages multiple wallet adapters, handles connection state, and provides
+ * a unified interface for wallet operations.
+ *
+ * @example
+ * ```typescript
+ * import { BTCWalletManager } from '@btc-connect/core';
+ *
+ * // Create manager with callbacks
+ * const manager = new BTCWalletManager({
+ *   onStateChange: (state) => console.log('State:', state),
+ *   onError: (error) => console.error('Error:', error)
+ * });
+ *
+ * // Initialize adapters for installed wallets
+ * manager.initializeAdapters();
+ *
+ * // Get available wallets
+ * const wallets = manager.getAvailableWallets();
+ * console.log('Available:', wallets);
+ *
+ * // Connect to a wallet
+ * const accounts = await manager.connect('unisat');
+ * console.log('Connected:', accounts);
+ *
+ * // Get current state
+ * const state = manager.getState();
+ *
+ * // Listen to events
+ * manager.on('accountChange', (accounts) => {
+ *   console.log('Account changed:', accounts);
+ * });
+ *
+ * // Disconnect
+ * await manager.disconnect();
+ *
+ * // Clean up
+ * manager.destroy();
+ * ```
  */
 export class BTCWalletManager implements WalletManager {
   public config: WalletManagerConfig;
@@ -23,12 +61,33 @@ export class BTCWalletManager implements WalletManager {
   private eventManager: WalletEventManager = new WalletEventManager();
   private isDestroyed = false;
 
+  /**
+   * Creates a new BTCWalletManager instance.
+   *
+   * @param config - Manager configuration including callbacks
+   *
+   * @example
+   * ```typescript
+   * const manager = new BTCWalletManager({
+   *   onStateChange: (state) => console.log('State changed:', state),
+   *   onError: (error) => console.error('Error:', error)
+   * });
+   * ```
+   */
   constructor(config: WalletManagerConfig = {}) {
     this.config = { ...config };
   }
 
   /**
-   * 初始化适配器
+   * Initializes adapters for all installed wallets.
+   * Automatically detects and registers available wallet adapters.
+   *
+   * @example
+   * ```typescript
+   * const manager = new BTCWalletManager();
+   * manager.initializeAdapters();
+   * // Now adapters for UniSat, OKX, etc. are registered
+   * ```
    */
   public initializeAdapters(): void {
     console.log('[BTC-Connect:Core] Initializing adapters...');
@@ -41,7 +100,18 @@ export class BTCWalletManager implements WalletManager {
   }
 
   /**
-   * 注册适配器
+   * Registers a wallet adapter with the manager.
+   *
+   * @param adapter - The wallet adapter to register
+   * @throws {Error} If the manager has been destroyed
+   *
+   * @example
+   * ```typescript
+   * import { UniSatAdapter } from '@btc-connect/core';
+   *
+   * const manager = new BTCWalletManager();
+   * manager.register(new UniSatAdapter());
+   * ```
    */
   register(adapter: BTCWalletAdapter): void {
     if (this.isDestroyed) {
@@ -63,7 +133,14 @@ export class BTCWalletManager implements WalletManager {
   }
 
   /**
-   * 注销适配器
+   * Unregisters and destroys a wallet adapter.
+   *
+   * @param walletId - The ID of the wallet adapter to unregister
+   *
+   * @example
+   * ```typescript
+   * manager.unregister('unisat');
+   * ```
    */
   unregister(walletId: string): void {
     const adapter = this.adapters.get(walletId);
@@ -85,21 +162,48 @@ export class BTCWalletManager implements WalletManager {
   }
 
   /**
-   * 获取适配器
+   * Gets a specific wallet adapter by ID.
+   *
+   * @param walletId - The wallet ID to look up
+   * @returns The adapter instance, or null if not found
+   *
+   * @example
+   * ```typescript
+   * const adapter = manager.getAdapter('unisat');
+   * if (adapter) {
+   *   console.log('Adapter found:', adapter.name);
+   * }
+   * ```
    */
   getAdapter(walletId: string): BTCWalletAdapter | null {
     return this.adapters.get(walletId) || null;
   }
 
   /**
-   * 获取所有适配器
+   * Gets all registered wallet adapters.
+   *
+   * @returns Array of all registered adapters
+   *
+   * @example
+   * ```typescript
+   * const adapters = manager.getAllAdapters();
+   * console.log('Registered wallets:', adapters.map(a => a.id));
+   * ```
    */
   getAllAdapters(): BTCWalletAdapter[] {
     return Array.from(this.adapters.values());
   }
 
   /**
-   * 获取可用的钱包列表
+   * Gets list of installed and ready wallets.
+   *
+   * @returns Array of wallet info objects for available wallets
+   *
+   * @example
+   * ```typescript
+   * const wallets = manager.getAvailableWallets();
+   * wallets.forEach(w => console.log(`${w.name}: ${w.id}`));
+   * ```
    */
   getAvailableWallets(): WalletInfo[] {
     console.log('=== getAvailableWallets Debug ===');
@@ -121,7 +225,21 @@ export class BTCWalletManager implements WalletManager {
   }
 
   /**
-   * 连接钱包
+   * Connects to a specific wallet.
+   *
+   * @param walletId - The ID of the wallet to connect
+   * @returns Promise resolving to connected account info
+   * @throws {Error} If manager is destroyed or wallet not found
+   *
+   * @example
+   * ```typescript
+   * try {
+   *   const accounts = await manager.connect('unisat');
+   *   console.log('Connected:', accounts[0].address);
+   * } catch (error) {
+   *   console.error('Connection failed:', error);
+   * }
+   * ```
    */
   async connect(walletId: string): Promise<AccountInfo[]> {
     if (this.isDestroyed) {
@@ -180,7 +298,20 @@ export class BTCWalletManager implements WalletManager {
   }
 
   /**
-   * 采纳已授权会话为已连接（不触发授权弹窗）
+   * Adopts an existing authorized session without triggering a new authorization popup.
+   * Useful for restoring connections on page reload.
+   *
+   * @param walletId - The wallet ID to assume connection for
+   * @returns Connected account info if successful, null otherwise
+   *
+   * @example
+   * ```typescript
+   * // On page reload, try to restore connection
+   * const accounts = await manager.assumeConnected('unisat');
+   * if (accounts) {
+   *   console.log('Restored connection:', accounts[0].address);
+   * }
+   * ```
    */
   async assumeConnected(walletId: string): Promise<AccountInfo[] | null> {
     const adapter = this.getAdapter(walletId);
@@ -226,7 +357,13 @@ export class BTCWalletManager implements WalletManager {
   }
 
   /**
-   * 断开连接
+   * Disconnects from the currently connected wallet.
+   *
+   * @example
+   * ```typescript
+   * await manager.disconnect();
+   * console.log('Disconnected');
+   * ```
    */
   async disconnect(): Promise<void> {
     if (this.currentAdapter) {
@@ -250,14 +387,34 @@ export class BTCWalletManager implements WalletManager {
   }
 
   /**
-   * 切换钱包
+   * Switches to a different wallet.
+   * Disconnects current wallet and connects to the new one.
+   *
+   * @param walletId - The wallet ID to switch to
+   * @returns Promise resolving to connected account info
+   *
+   * @example
+   * ```typescript
+   * const accounts = await manager.switchWallet('okx');
+   * console.log('Switched to OKX:', accounts[0].address);
+   * ```
    */
   async switchWallet(walletId: string): Promise<AccountInfo[]> {
     return await this.connect(walletId);
   }
 
   /**
-   * 获取当前状态
+   * Gets the current wallet connection state.
+   *
+   * @returns Current wallet state including status, accounts, and network
+   *
+   * @example
+   * ```typescript
+   * const state = manager.getState();
+   * console.log('Status:', state.status);
+   * console.log('Accounts:', state.accounts);
+   * console.log('Network:', state.network);
+   * ```
    */
   getState(): WalletState {
     if (this.currentAdapter) {
@@ -274,14 +431,34 @@ export class BTCWalletManager implements WalletManager {
   }
 
   /**
-   * 获取当前适配器
+   * Gets the currently active wallet adapter.
+   *
+   * @returns The current adapter, or null if not connected
+   *
+   * @example
+   * ```typescript
+   * const adapter = manager.getCurrentAdapter();
+   * if (adapter) {
+   *   const balance = await adapter.getBalance();
+   * }
+   * ```
    */
   getCurrentAdapter(): BTCWalletAdapter | null {
     return this.currentAdapter;
   }
 
   /**
-   * 获取当前钱包
+   * Gets information about the currently connected wallet.
+   *
+   * @returns Wallet info object, or null if not connected
+   *
+   * @example
+   * ```typescript
+   * const wallet = manager.getCurrentWallet();
+   * if (wallet) {
+   *   console.log('Connected to:', wallet.name);
+   * }
+   * ```
    */
   getCurrentWallet(): WalletInfo | null {
     if (!this.currentAdapter) {
@@ -296,21 +473,55 @@ export class BTCWalletManager implements WalletManager {
   }
 
   /**
-   * 添加事件监听器
+   * Registers an event listener for wallet events.
+   *
+   * @template T - The event type
+   * @param event - The event name to listen for
+   * @param handler - The callback function
+   *
+   * @example
+   * ```typescript
+   * manager.on('connect', (walletId, accounts) => {
+   *   console.log('Connected:', walletId);
+   * });
+   * manager.on('accountChange', (walletId, accounts) => {
+   *   console.log('Account changed');
+   * });
+   * ```
    */
   on<T extends WalletEvent>(event: T, handler: EventHandler<T>): void {
     this.eventManager.on(event, handler);
   }
 
   /**
-   * 移除事件监听器
+   * Removes a previously registered event listener.
+   *
+   * @template T - The event type
+   * @param event - The event name
+   * @param handler - The callback function to remove
+   *
+   * @example
+   * ```typescript
+   * const handler = (walletId, accounts) => console.log(accounts);
+   * manager.on('accountChange', handler);
+   * manager.off('accountChange', handler);
+   * ```
    */
   off<T extends WalletEvent>(event: T, handler: EventHandler<T>): void {
     this.eventManager.off(event, handler);
   }
 
   /**
-   * 切换网络
+   * Switches the connected wallet to a different network.
+   *
+   * @param network - The target network ('mainnet', 'testnet', 'regtest')
+   * @throws {Error} If no wallet connected or network switching not supported
+   *
+   * @example
+   * ```typescript
+   * await manager.switchNetwork('testnet');
+   * console.log('Switched to testnet');
+   * ```
    */
   async switchNetwork(network: string): Promise<void> {
     if (this.isDestroyed) {
@@ -363,7 +574,14 @@ export class BTCWalletManager implements WalletManager {
   }
 
   /**
-   * 销毁管理器
+   * Destroys the manager and cleans up all resources.
+   * Disconnects all wallets and removes all event listeners.
+   *
+   * @example
+   * ```typescript
+   * manager.destroy();
+   * // Manager is no longer usable
+   * ```
    */
   destroy(): void {
     if (this.isDestroyed) return;

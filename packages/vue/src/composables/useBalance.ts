@@ -3,7 +3,45 @@ import { computed, ref, watch } from 'vue';
 import { useWalletContext } from '../walletContext';
 
 /**
- * 使用余额信息的Composable
+ * Balance management Composable
+ *
+ * Provides reactive access to wallet balance information with automatic refresh
+ * and loading state management.
+ *
+ * @returns Balance state and methods
+ * @returns {ComputedRef<BalanceDetail | null>} returns.balance - Current balance details
+ * @returns {Ref<boolean>} returns.isLoading - Whether balance is being loaded
+ * @returns {() => Promise<void>} returns.refreshBalance - Manually refresh balance
+ * @returns {ComputedRef<number>} returns.confirmedBalance - Confirmed balance in satoshis
+ * @returns {ComputedRef<number>} returns.unconfirmedBalance - Unconfirmed balance in satoshis
+ * @returns {ComputedRef<number>} returns.totalBalance - Total balance in satoshis
+ *
+ * @example
+ * ```vue
+ * <script setup>
+ * import { useBalance } from '@btc-connect/vue';
+ *
+ * const { balance, isLoading, refreshBalance, totalBalance } = useBalance();
+ *
+ * // Refresh balance manually
+ * const handleRefresh = async () => {
+ *   await refreshBalance();
+ *   console.log('Balance refreshed:', totalBalance.value);
+ * };
+ * </script>
+ *
+ * <template>
+ *   <div>
+ *     <p v-if="isLoading">Loading balance...</p>
+ *     <p v-else>Total: {{ totalBalance }} satoshis</p>
+ *     <button @click="handleRefresh" :disabled="isLoading">Refresh</button>
+ *   </div>
+ * </template>
+ * ```
+ */
+
+/**
+ * Use balance information Composable
  */
 export function useBalance() {
   const ctx = useWalletContext();

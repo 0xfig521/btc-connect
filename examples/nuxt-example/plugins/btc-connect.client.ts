@@ -4,7 +4,7 @@
  * 这个插件确保BTC Connect只在客户端初始化，避免SSR问题
  */
 
-import type { WalletState } from '@btc-connect/core';
+import type { WalletState } from '@btc-connect/vue';
 import { BTCWalletPlugin, ConnectButton } from '@btc-connect/vue';
 import { defineNuxtPlugin } from '#app';
 

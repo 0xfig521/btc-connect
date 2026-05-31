@@ -20,11 +20,14 @@
 ### 1. 安装依赖
 
 ```bash
-npm install @btc-connect/react
-# 或
-yarn add @btc-connect/react
-# 或
+# React 项目
 bun add @btc-connect/react
+
+# Vue 项目
+bun add @btc-connect/vue
+
+# 核心 (框架无关)
+bun add @btc-connect/core
 ```
 
 ### 2. 基础配置
@@ -533,11 +536,11 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
 ```json
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "bun run build",
   "outputDirectory": ".next",
   "framework": "nextjs",
-  "installCommand": "npm install",
-  "devCommand": "npm run dev",
+  "installCommand": "bun install",
+  "devCommand": "bun dev",
   "functions": {
     "app/**/*.ts": {
       "maxDuration": 30
@@ -551,21 +554,15 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 创建 `Dockerfile`：
 
 ```dockerfile
-FROM node:18-alpine AS base
+FROM oven/bun:1 AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
-RUN \
-  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then npm ci; \
-  elif [ -f pnpm-lock.yaml ]; then yarn global add pnpm && pnpm i --frozen-lockfile; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
+# Copy package files
+COPY package.json bun.lockb* ./
+RUN bun install --frozen-lockfile
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -575,7 +572,7 @@ COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED 1
 
-RUN npm run build
+RUN bun run build
 
 # Production image, copy all the files and run next
 FROM base AS runner
@@ -628,20 +625,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
         with:
-          node-version: '18'
-          cache: 'npm'
+          bun-version: 'latest'
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Run tests
-        run: npm test
+        run: bun test
 
       - name: Build
-        run: npm run build
+        run: bun run build
 
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v20
@@ -709,36 +705,288 @@ export function OptimizedWalletComponent() {
 
 ### 缓存策略
 
+v0.5.x 提供了强大的缓存系统，支持 TTL 和 LRU 淘汰策略。
+
+#### 基础缓存使用
+
 ```typescript
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useWallet } from '@btc-connect/react';
+import { MemoryCache, CacheKeyBuilder } from '@btc-connect/core';
+
+// 创建缓存实例
+const balanceCache = new MemoryCache({
+  ttl: 10000,              // 10秒过期
+  maxSize: 100,            // 最多100项
+  enableAutoCleanup: true  // 自动清理过期项
+});
 
 export function CachedWalletComponent() {
   const { address, balance, utils } = useWallet();
 
-  // 缓存格式化地址
+  // 使用缓存存储余额数据
+  const cachedBalance = useMemo(() => {
+    if (!address) return null;
+    
+    const key = CacheKeyBuilder.balance('unisat', address);
+    const cached = balanceCache.get(key);
+    
+    if (cached) {
+      return cached;
+    }
+    
+    if (balance) {
+      balanceCache.set(key, balance);
+      return balance;
+    }
+    
+    return null;
+  }, [address, balance]);
+
+  // 格式化显示
   const formattedAddress = useMemo(() => {
     if (!address) return '';
     return utils.formatAddress(address, { startChars: 6, endChars: 4 });
   }, [address, utils]);
 
-  // 缓存格式化余额
   const formattedBalance = useMemo(() => {
-    if (!balance) return '0 BTC';
-    return utils.formatBalance(balance, { unit: 'BTC' });
-  }, [balance, utils]);
-
-  // 缓存连接函数
-  const handleConnect = useCallback(async (walletId: string) => {
-    // 连接逻辑
-  }, []);
+    if (!cachedBalance) return '0 BTC';
+    return utils.formatBalance(cachedBalance.confirmed || 0, { unit: 'BTC' });
+  }, [cachedBalance, utils]);
 
   return (
     <div>
       <p>地址: {formattedAddress}</p>
       <p>余额: {formattedBalance}</p>
+    </div>
+  );
+}
+```
+
+#### 增强缓存（带统计和事件）
+
+```typescript
+'use client';
+
+import { EnhancedMemoryCache, CacheKeyBuilder } from '@btc-connect/core';
+
+// 创建增强缓存实例
+const dataCache = new EnhancedMemoryCache({
+  ttl: 60000,              // 60秒过期
+  maxSize: 1000,           // 最多1000项
+  trackStats: true,        // 启用统计
+  trackEvents: true,       // 启用事件
+  maxMemory: 50 * 1024 * 1024  // 50MB 内存限制
+});
+
+export function EnhancedCacheExample() {
+  // 监听缓存事件
+  dataCache.on((event) => {
+    console.log(`缓存事件: ${event.type}`, event.key);
+    // event.type: 'hit' | 'miss' | 'set' | 'delete' | 'evict' | 'clear'
+  });
+
+  // 获取缓存统计
+  const stats = dataCache.getStats();
+  console.log({
+    size: stats.size,           // 当前缓存大小
+    hits: stats.hits,           // 命中次数
+    misses: stats.misses,       // 未命中次数
+    hitRate: stats.hitRate,     // 命中率 (0-1)
+    evictions: stats.evictions  // 淘汰次数
+  });
+
+  // 批量操作
+  const keys = ['key1', 'key2', 'key3'];
+  const results = dataCache.getMany(keys);
+  
+  // 按条件查找
+  const matches = dataCache.find((value, key) => {
+    return key.startsWith('balance:');
+  });
+
+  return <div>缓存示例</div>;
+}
+```
+
+#### 缓存管理器
+
+```typescript
+import { getCacheManager, CachePresets } from '@btc-connect/core';
+
+const manager = getCacheManager();
+
+// 创建命名缓存
+const balanceCache = manager.getCache('balance', CachePresets.balance);
+const accountCache = manager.getCache('accounts', CachePresets.accounts);
+const networkCache = manager.getCache('network', CachePresets.network);
+
+// 获取所有缓存统计
+const allStats = manager.getAllStats();
+console.log(allStats.balance, allStats.accounts);
+
+// 清理所有过期项
+const cleaned = manager.cleanupAll();
+console.log(`清理了 ${cleaned} 个过期项`);
+```
+
+#### 缓存装饰器
+
+```typescript
+import { cached, CachePresets, invalidateCache } from '@btc-connect/core';
+
+class WalletService {
+  // 使用预设缓存配置
+  @cached(CachePresets.balance)
+  async getBalance(walletId: string, address: string) {
+    // 自动缓存结果
+    return await wallet.getBalance(address);
+  }
+
+  // 自定义缓存配置
+  @cached({
+    cacheName: 'custom',
+    ttl: 30000,
+    keyBuilder: (id) => `custom:${id}`,
+    shouldCache: (result) => result !== null
+  })
+  async getData(id: string) {
+    return await fetchData(id);
+  }
+
+  // 操作后清除相关缓存
+  @invalidateCache(['balance', 'transactions'])
+  async sendTransaction(to: string, amount: number) {
+    return await wallet.send(to, amount);
+  }
+}
+```
+
+### 批处理优化
+
+v0.5.x 提供了批处理系统，可以将多个请求合并为单个批量操作。
+
+#### 基础批处理
+
+```typescript
+'use client';
+
+import { useEffect, useState } from 'react';
+import { BatchScheduler, createSimpleBatchScheduler } from '@btc-connect/core';
+
+// 创建批处理调度器
+const balanceBatchScheduler = createSimpleBatchScheduler<string, BalanceInfo>(
+  async (addresses) => {
+    // 批量获取余额
+    return await Promise.all(
+      addresses.map(addr => fetchBalance(addr))
+    );
+  },
+  {
+    maxBatchSize: 50,      // 每批最多50个请求
+    maxWaitTimeMS: 100     // 最多等待100ms
+  }
+);
+
+export function BatchWalletComponent() {
+  const [balances, setBalances] = useState<Map<string, BalanceInfo>>(new Map());
+
+  useEffect(() => {
+    // 监听批处理事件
+    balanceBatchScheduler.on((event) => {
+      if (event.type === 'batchComplete') {
+        console.log(`批次 ${event.batchId} 完成，处理了 ${event.requestCount} 个请求`);
+      }
+    });
+
+    return () => balanceBatchScheduler.destroy();
+  }, []);
+
+  const fetchMultipleBalances = async (addresses: string[]) => {
+    // 提交多个请求，自动批处理
+    const results = await Promise.all(
+      addresses.map(addr => balanceBatchScheduler.submit(addr))
+    );
+    
+    const newBalances = new Map(addresses.map((addr, i) => [addr, results[i]]));
+    setBalances(newBalances);
+  };
+
+  return (
+    <div>
+      <button onClick={() => fetchMultipleBalances(['addr1', 'addr2', 'addr3'])}>
+        批量获取余额
+      </button>
+      
+      {/* 显示余额列表 */}
+    </div>
+  );
+}
+```
+
+#### 高级批处理
+
+```typescript
+'use client';
+
+import { BatchScheduler } from '@btc-connect/core';
+
+// 定义批处理器
+const processor = async (requests) => {
+  const results = new Map<string, Result>();
+  
+  // 批量处理所有请求
+  for (const req of requests) {
+    const result = await processItem(req.data);
+    results.set(req.id, result);
+  }
+  
+  return results;
+};
+
+// 创建高级调度器
+const scheduler = new BatchScheduler(processor, {
+  maxBatchSize: 100,        // 每批最多100项
+  maxWaitTimeMS: 50,        // 最多等待50ms
+  minBatchSize: 1,          // 最少1项触发处理
+  priorityThreshold: 10     // 优先级阈值
+});
+
+export function AdvancedBatchExample() {
+  const submitRequests = async () => {
+    // 提交不同优先级的请求
+    const promises = [
+      scheduler.submit({ type: 'balance', address: 'tb1q...' }, 0),   // 普通优先级
+      scheduler.submit({ type: 'balance', address: 'tb1q...' }, 10),  // 高优先级
+      scheduler.submit({ type: 'balance', address: 'tb1q...' }, 5)    // 中优先级
+    ];
+
+    const results = await Promise.all(promises);
+    
+    // 获取性能指标
+    const metrics = scheduler.getMetrics();
+    console.log({
+      totalBatches: metrics.totalBatches,
+      totalRequests: metrics.totalRequests,
+      averageBatchSize: metrics.averageBatchSize,
+      averageWaitTime: metrics.averageWaitTime,
+      successRate: metrics.successRate
+    });
+
+    return results;
+  };
+
+  // 强制立即处理当前队列
+  const flushQueue = async () => {
+    await scheduler.flush();
+  };
+
+  return (
+    <div>
+      <button onClick={submitRequests}>提交批处理请求</button>
+      <button onClick={flushQueue}>立即处理队列</button>
     </div>
   );
 }

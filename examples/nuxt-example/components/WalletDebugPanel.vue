@@ -62,14 +62,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useWallet } from '@btc-connect/vue'
 
 const logs = ref<string[]>([])
 
 const wallet = useWallet()
 const {
-  state: walletState,
   status,
   accounts,
   currentAccount,
@@ -85,6 +84,20 @@ const {
   manager
 } = wallet
 
+// 构建状态对象用于调试显示
+const walletState = computed(() => ({
+  status: status.value,
+  accounts: accounts.value,
+  currentAccount: currentAccount.value,
+  network: network.value,
+  error: error.value,
+  isConnected: isConnected.value,
+  isConnecting: isConnecting.value,
+  address: address.value,
+  balance: balance.value,
+  publicKey: publicKey.value
+}))
+
 // 添加日志
 const addLog = (message: string) => {
   const timestamp = new Date().toLocaleTimeString()
@@ -99,7 +112,7 @@ const addLog = (message: string) => {
 const forceUpdate = () => {
   addLog('🔄 强制刷新状态')
   // 强制访问所有响应式属性，触发重新计算
-  void wallet.state.value
+  void walletState.value
   void wallet.currentWallet.value
   void wallet.isConnected.value
   void wallet.address.value

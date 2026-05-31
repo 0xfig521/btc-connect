@@ -1,6 +1,6 @@
 # @btc-connect/vue
 
-[中文文档](./README.zh-CN.md) | English
+中文文档 | [English](./README.md)
 
 <p align="center">
   <strong>Vue 3 适配器 - 提供组合式API和组件的BTC Connect绑定</strong>
@@ -109,6 +109,27 @@ import { ConnectButton } from '@btc-connect/vue'
 - `onClose?: () => void` - 关闭回调
 - `onConnect?: (walletId: string) => void` - 连接回调
 
+## Composables API
+
+### Composables 概览
+
+| Composable | 说明 | 主要返回值 |
+|------------|------|-----------|
+| `useWallet()` | 主要 Composable - 统一访问点 | 所有钱包功能 |
+| `useWalletEvent()` | 事件监听，支持自动清理 | `on`, `once`, `off`, `clear` |
+| `useWalletManager()` | 管理器访问 | `currentAdapter`, `availableAdapters`, `adapterStates` |
+| `useWalletManagerAdvanced()` | 高级管理器操作 | `connectMultiple`, `disconnectAll`, `healthCheck` |
+| `useCore()` | 核心功能 | `manager`, `state`, `isConnected` |
+| `useNetwork()` | 网络管理 | `network`, `switchNetwork` |
+| `useWalletModal()` | 弹窗控制 | `isOpen`, `open`, `close` |
+| `useAccount()` | 账户信息 | `accounts`, `currentAccount`, `balance` |
+| `useBalance()` | 余额管理 | `balance`, `refreshBalance` |
+| `useSignature()` | 签名操作 | `signMessage`, `signPsbt` |
+| `useTransactions()` | 交易操作 | `sendBitcoin`, `sendBitcoinAdvanced` |
+| `useWalletDetection()` | 钱包检测 | `isDetecting`, `detectionStats` |
+| `useWalletInfo()` | 钱包信息 | `currentWallet`, `availableWallets` |
+| `useConnectWallet()` | 连接操作 | `connect`, `disconnect`, `switchWallet` |
+
 ## Vue Composables
 
 ### useWallet - 统一Composable
@@ -203,6 +224,265 @@ interface UseWalletModalReturn {
   currentWalletId: Ref<string | null>;
   modalSource: Ref<string | null>;
 }
+```
+
+### useWalletManager
+
+访问底层钱包管理器和适配器管理的composable。
+
+**返回值:**
+```typescript
+interface UseWalletManagerReturn {
+  currentAdapter: ComputedRef<BTCWalletAdapter | null>;
+  availableAdapters: ComputedRef<BTCWalletAdapter[]>;
+  adapterStates: ComputedRef<Record<string, WalletState>>;
+  getAdapter: (walletId: string) => BTCWalletAdapter | null;
+  addAdapter: (adapter: BTCWalletAdapter) => void;
+  removeAdapter: (walletId: string) => boolean;
+  manager: Ref<BTCWalletManager | null>;
+}
+```
+
+**示例:**
+```vue
+<script setup>
+import { useWalletManager } from '@btc-connect/vue'
+
+const {
+  currentAdapter,
+  availableAdapters,
+  adapterStates,
+  getAdapter,
+  addAdapter,
+  removeAdapter
+} = useWalletManager()
+
+// 获取 UniSat 适配器
+const unisatAdapter = getAdapter('unisat')
+
+// 添加自定义适配器
+const addCustomAdapter = () => {
+  const customAdapter = createMyCustomAdapter()
+  addAdapter(customAdapter)
+}
+</script>
+```
+
+### useWalletManagerAdvanced
+
+高级composable，提供批量操作和健康监控功能。
+
+**返回值:**
+```typescript
+interface UseWalletManagerAdvancedReturn {
+  // 批量操作
+  connectMultiple: (walletIds: string[]) => Promise<Array<{
+    walletId: string;
+    success: boolean;
+    error?: string;
+  }>>;
+  disconnectAll: () => Promise<Array<{
+    walletId: string;
+    success: boolean;
+    error?: string;
+  }>>;
+  switchAllToNetwork: (network: string) => Promise<Array<{
+    walletId: string;
+    success: boolean;
+    error?: string;
+  }>>;
+
+  // 健康检查与监控
+  healthCheck: () => Promise<{
+    status: 'healthy' | 'warning' | 'error';
+    message: string;
+    details: Array<{
+      walletId: string;
+      status: string;
+      issues: string[];
+    }>;
+  }>;
+  adapterMonitor: () => {
+    totalAdapters: number;
+    readyAdapters: number;
+    connectedAdapters: number;
+    adaptersWithErrors: number;
+    currentAdapter: string | null;
+    timestamp: string;
+  };
+
+  // 继承自 useWalletManager
+  currentAdapter: ComputedRef<BTCWalletAdapter | null>;
+  availableAdapters: ComputedRef<BTCWalletAdapter[]>;
+  adapterStates: ComputedRef<Record<string, WalletState>>;
+  manager: Ref<BTCWalletManager | null>;
+}
+```
+
+**示例:**
+```vue
+<script setup>
+import { useWalletManagerAdvanced } from '@btc-connect/vue'
+
+const {
+  connectMultiple,
+  disconnectAll,
+  switchAllToNetwork,
+  healthCheck,
+  adapterMonitor
+} = useWalletManagerAdvanced()
+
+// 批量连接多个钱包
+const connectWallets = async () => {
+  const results = await connectMultiple(['unisat', 'okx'])
+  console.log('连接结果:', results)
+}
+
+// 断开所有钱包
+const disconnectAllWallets = async () => {
+  const results = await disconnectAll()
+  console.log('断开结果:', results)
+}
+
+// 切换所有钱包到测试网
+const switchToTestnet = async () => {
+  const results = await switchAllToNetwork('testnet')
+  console.log('网络切换结果:', results)
+}
+
+// 检查适配器健康状态
+const checkHealth = async () => {
+  const health = await healthCheck()
+  console.log('健康状态:', health.status)
+  console.log('详情:', health.details)
+}
+
+// 获取适配器统计信息
+const getStats = () => {
+  const stats = adapterMonitor()
+  console.log('适配器统计:', stats)
+}
+</script>
+```
+
+### useWalletInfo
+
+访问当前钱包和可用钱包信息的composable。
+
+**返回值:**
+```typescript
+interface UseWalletInfoReturn {
+  currentWallet: ComputedRef<WalletInfo | null>;
+  availableWallets: ComputedRef<WalletInfo[]>;
+  hasWallets: ComputedRef<boolean>;
+}
+```
+
+**示例:**
+```vue
+<script setup>
+import { useWalletInfo } from '@btc-connect/vue'
+
+const { currentWallet, availableWallets, hasWallets } = useWalletInfo()
+
+// 显示当前钱包信息
+const walletName = computed(() => currentWallet.value?.name || '未连接')
+
+// 列出所有可用钱包
+const walletList = computed(() => availableWallets.value.map(w => ({
+  id: w.id,
+  name: w.name,
+  icon: w.icon
+})))
+</script>
+
+<template>
+  <div>
+    <p>当前钱包: {{ walletName }}</p>
+    <p v-if="hasWallets">可用钱包: {{ walletList.length }}</p>
+  </div>
+</template>
+```
+
+### useWalletDetection
+
+钱包检测composable，提供事件驱动的实时状态更新。
+
+**返回值:**
+```typescript
+interface UseWalletDetectionReturn {
+  // 状态
+  isDetecting: ComputedRef<boolean>;
+  availableWallets: ComputedRef<WalletInfo[]>;
+  detectedWallets: ComputedRef<string[]>;
+  isComplete: ComputedRef<boolean>;
+  elapsedTime: ComputedRef<number>;
+  lastDetectionTime: ComputedRef<number | null>;
+  detectionStats: ComputedRef<{
+    totalWallets: number;
+    detectedWallets: number;
+    detectionRate: number;
+    averageDetectionTime: number;
+    isOptimal: boolean;
+  }>;
+
+  // 方法
+  isWalletDetected: (walletId: string) => boolean;
+  getWalletDetectionTime: (walletId: string) => number | null;
+  startDetection: () => Promise<void>;
+  stopDetection: () => void;
+  restartDetection: () => Promise<void>;
+}
+```
+
+**示例:**
+```vue
+<script setup>
+import { useWalletDetection } from '@btc-connect/vue'
+
+const {
+  isDetecting,
+  detectedWallets,
+  isComplete,
+  elapsedTime,
+  detectionStats,
+  isWalletDetected,
+  startDetection,
+  stopDetection,
+  restartDetection
+} = useWalletDetection()
+
+// 检查特定钱包是否已检测
+const isUnisatDetected = computed(() => isWalletDetected('unisat'))
+
+// 手动控制检测
+const handleStartDetection = async () => {
+  await startDetection()
+}
+
+const handleStopDetection = () => {
+  stopDetection()
+}
+
+// 显示检测进度
+const detectionProgress = computed(() => {
+  const stats = detectionStats.value
+  return `${stats.detectedWallets}/${stats.totalWallets} 个钱包 (${stats.detectionRate.toFixed(1)}%)`
+})
+</script>
+
+<template>
+  <div>
+    <p v-if="isDetecting">正在检测钱包... ({{ elapsedTime }}ms)</p>
+    <p v-else-if="isComplete">检测完成: {{ detectionProgress }}</p>
+    
+    <p>状态是否最优: {{ detectionStats.isOptimal ? '是' : '否' }}</p>
+    
+    <button @click="handleStartDetection" :disabled="isDetecting">开始检测</button>
+    <button @click="handleStopDetection" :disabled="!isDetecting">停止检测</button>
+    <button @click="restartDetection">重新检测</button>
+  </div>
+</template>
 ```
 
 ## API 参考

@@ -273,13 +273,37 @@ export interface WalletInfo {
   recommended?: boolean;
 }
 
+/**
+ * Modal component for wallet selection and connection management.
+ * Displays available wallets and allows users to connect or download wallets.
+ *
+ * @param props - Modal props
+ * @param props.title - Modal title (default: 'Select Wallet')
+ * @param props.className - Custom CSS class
+ * @param props.style - Custom inline styles
+ *
+ * @example
+ * ```tsx
+ * import { WalletModal, useWalletModal } from '@btc-connect/react';
+ *
+ * function App() {
+ *   const { isOpen, close } = useWalletModal();
+ *
+ *   return (
+ *     <WalletModal
+ *       title="Select a Wallet"
+ *     />
+ *   );
+ * }
+ * ```
+ */
 export const WalletModal: React.FC<WalletModalProps> = ({
   title = 'Select Wallet',
   className = '',
   style,
 }) => {
   const { availableWallets, connect } = useConnectWallet();
-  const { isModalOpen, closeModal } = useWalletModal();
+  const { isOpen, close } = useWalletModal();
   const backdropRef = useRef<HTMLDivElement>(null);
 
   // 使用 TailwindCSS 兼容的主题检测
@@ -376,10 +400,10 @@ export const WalletModal: React.FC<WalletModalProps> = ({
   const handleBackdropClick = useCallback(
     (event: React.MouseEvent) => {
       if (event.target === event.currentTarget) {
-        closeModal();
+        close();
       }
     },
-    [closeModal],
+    [close],
   );
 
   // 处理钱包选择
@@ -388,7 +412,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({
       if (wallet.installed) {
         try {
           await connect(wallet.id);
-          closeModal();
+          close();
         } catch (error) {
           console.error('Failed to connect wallet:', error);
         }
@@ -403,14 +427,14 @@ export const WalletModal: React.FC<WalletModalProps> = ({
         }
       }
     },
-    [connect, closeModal],
+    [connect, close],
   );
 
   // 处理ESC键关闭
   useEffect(() => {
     const handleEscKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && isModalOpen) {
-        closeModal();
+      if (event.key === 'Escape' && isOpen) {
+        close();
       }
     };
 
@@ -418,11 +442,11 @@ export const WalletModal: React.FC<WalletModalProps> = ({
     return () => {
       document.removeEventListener('keydown', handleEscKey);
     };
-  }, [isModalOpen, closeModal]);
+  }, [isOpen, close]);
 
   // 阻止背景滚动
   useEffect(() => {
-    if (isModalOpen) {
+    if (isOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -431,9 +455,9 @@ export const WalletModal: React.FC<WalletModalProps> = ({
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isModalOpen]);
+  }, [isOpen]);
 
-  if (!isModalOpen) {
+  if (!isOpen) {
     return null;
   }
 
@@ -468,7 +492,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({
           <h2 className="btc-modal-title">{title}</h2>
           <button
             className={`btc-modal-close theme-${currentTheme}`}
-            onClick={closeModal}
+            onClick={close}
             aria-label="Close modal"
           >
             ×

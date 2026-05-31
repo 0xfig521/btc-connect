@@ -74,6 +74,50 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * BalanceDisplay Component
+ *
+ * Displays Bitcoin balance with loading, error, and empty states.
+ * Supports showing confirmed/unconfirmed breakdown and customizable precision.
+ *
+ * @component
+ *
+ * @props {BalanceDisplayProps} props - Component props
+ * @props {BalanceDetail | null} props.balance - Balance details object
+ * @props {number} props.precision - Decimal places (default: 8)
+ * @props {boolean} props.showUnit - Show BTC unit (default: true)
+ * @props {'light' | 'dark'} props.theme - Theme mode (default: 'light')
+ * @props {Error | null} props.error - Error state
+ *
+ * @emits error - Emitted when an error occurs
+ * @emits refresh - Emitted when refresh is requested
+ *
+ * @example
+ * ```vue
+ * <template>
+ *   <BalanceDisplay
+ *     :balance="walletBalance"
+ *     :precision="8"
+ *     show-unit
+ *     @refresh="handleRefresh"
+ *   />
+ * </template>
+ *
+ * <script setup>
+ * import { BalanceDisplay } from '@btc-connect/vue';
+ *
+ * const walletBalance = {
+ *   confirmed: 100000,
+ *   unconfirmed: 5000,
+ *   total: 105000
+ * };
+ *
+ * const handleRefresh = () => {
+ *   console.log('Refresh balance');
+ * };
+ * </script>
+ * ```
+ */
 import { computed, onMounted } from 'vue';
 import type { BalanceDisplayProps } from '../types';
 import { formatBTCBalance } from '../utils';

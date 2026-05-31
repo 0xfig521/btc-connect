@@ -1,11 +1,35 @@
 /**
- * 统一错误处理系统
+ * Unified error handling system.
+ * Provides standardized error types, error codes, and error recovery mechanisms.
  *
- * 提供标准化的错误处理、错误码管理和错误恢复机制
+ * @example
+ * ```typescript
+ * import { UnifiedError, ErrorFactory, ErrorCode } from '@btc-connect/core';
+ *
+ * try {
+ *   await manager.connect('unisat');
+ * } catch (error) {
+ *   if (error instanceof UnifiedError) {
+ *     console.log('Error code:', error.code);
+ *     console.log('Severity:', error.severity);
+ *     console.log('Full message:', error.getFullMessage());
+ *     console.log('Can retry:', error.canRetry());
+ *   }
+ * }
+ *
+ * // Create errors using factory
+ * const error = ErrorFactory.walletNotInstalled('unisat');
+ * const error2 = ErrorFactory.transactionFailed('Insufficient fee');
+ * ```
  */
 
 // ===== 错误码枚举 =====
 
+/**
+ * Standardized error codes organized by category.
+ * General errors (1xxx), Wallet errors (2xxx), Network errors (3xxx),
+ * Transaction errors (4xxx), Signature errors (5xxx), Config errors (6xxx).
+ */
 export enum ErrorCode {
   // 通用错误 (1xxx)
   UNKNOWN_ERROR = '1000',
@@ -44,6 +68,9 @@ export enum ErrorCode {
 
 // ===== 错误严重级别 =====
 
+/**
+ * Error severity levels for prioritization.
+ */
 export enum ErrorSeverity {
   LOW = 'low',       // 低级别，不影响核心功能
   MEDIUM = 'medium', // 中级别，影响部分功能
@@ -99,6 +126,23 @@ export interface ErrorContext {
 
 // ===== 统一错误类 =====
 
+/**
+ * Unified error class with structured error information.
+ * Provides error code, severity, context, and retry capabilities.
+ *
+ * @example
+ * ```typescript
+ * const error = new UnifiedError(
+ *   ErrorCode.WALLET_NOT_INSTALLED,
+ *   'UniSat wallet not found',
+ *   ErrorSeverity.HIGH,
+ *   { walletId: 'unisat', suggestion: 'Install UniSat wallet' }
+ * );
+ *
+ * console.log(error.getFullMessage());
+ * console.log(error.canRetry());
+ * ```
+ */
 export class UnifiedError extends Error {
   public readonly code: ErrorCode;
   public readonly severity: ErrorSeverity;
@@ -201,7 +245,24 @@ export class UnifiedError extends Error {
   }
 }
 
-// 错误工厂
+/**
+ * Factory methods for creating common error types.
+ * Provides convenient constructors for wallet, network, transaction, and signature errors.
+ *
+ * @example
+ * ```typescript
+ * // Wallet errors
+ * const error1 = ErrorFactory.walletNotInstalled('unisat');
+ * const error2 = ErrorFactory.walletConnectionFailed('okx', 'User rejected');
+ *
+ * // Transaction errors
+ * const error3 = ErrorFactory.transactionFailed('Insufficient fee');
+ * const error4 = ErrorFactory.insufficientBalance('1000', '500');
+ *
+ * // Signature errors
+ * const error5 = ErrorFactory.signatureRejected('User denied');
+ * ```
+ */
 export const ErrorFactory = {
   // 钱包错误
   walletNotInstalled: (walletId: string, context?: Partial<ErrorContext>) =>

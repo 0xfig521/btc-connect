@@ -1,11 +1,34 @@
 /**
- * 增强缓存系统 - 在原有基础上添加统计、事件和批量操作
+ * Enhanced cache system with statistics tracking, events, and batch operations.
+ * Extends MemoryCache with additional features for monitoring and optimization.
  *
- * 基于现有 MemoryCache 功能，添加：
- * - 详细的统计信息（命中率、内存占用）
- * - 事件通知系统
- * - 批量操作支持
- * - 更智能的淘汰策略
+ * @example
+ * ```typescript
+ * import { EnhancedMemoryCache } from '@btc-connect/core';
+ *
+ * const cache = new EnhancedMemoryCache<UserData>({
+ *   ttl: 60000,
+ *   maxSize: 1000,
+ *   trackStats: true,      // Enable statistics
+ *   trackEvents: true,     // Enable events
+ *   maxMemory: 50 * 1024 * 1024  // 50MB memory limit
+ * });
+ *
+ * // Get statistics
+ * const stats = cache.getStats();
+ * console.log('Hit rate:', stats.hitRate);
+ *
+ * // Listen to events
+ * cache.on((event) => {
+ *   console.log(`Cache event: ${event.type}`, event.key);
+ * });
+ *
+ * // Batch operations
+ * cache.setMany([
+ *   { key: 'user:1', value: { name: 'Alice' } },
+ *   { key: 'user:2', value: { name: 'Bob' } }
+ * ]);
+ * ```
  */
 
 import type { CacheOptions as BaseCacheOptions } from './memory-cache';
@@ -44,6 +67,11 @@ export type CacheEventHandler = (event: CacheEvent) => void;
 
 // ===== 增强缓存类 =====
 
+/**
+ * Enhanced memory cache with statistics and events.
+ *
+ * @template T - The type of cached values
+ */
 export class EnhancedMemoryCache<T = unknown> extends MemoryCache<T> {
   private hits = 0;
   private misses = 0;
@@ -69,7 +97,7 @@ export class EnhancedMemoryCache<T = unknown> extends MemoryCache<T> {
 
   // ===== 重写核心方法添加追踪 =====
 
-  get(key: string): T | null {
+  override get(key: string): T | null {
     const result = super.get(key);
 
     if (this.options.trackStats) {
@@ -93,7 +121,7 @@ export class EnhancedMemoryCache<T = unknown> extends MemoryCache<T> {
     return result;
   }
 
-  set(key: string, data: T, ttl?: number): void {
+  override set(key: string, data: T, ttl?: number): void {
     // 检查内存限制
     if (this.options.maxMemory) {
       const currentUsage = this.calculateMemoryUsage();
@@ -117,7 +145,7 @@ export class EnhancedMemoryCache<T = unknown> extends MemoryCache<T> {
     }
   }
 
-  delete(key: string): boolean {
+  override delete(key: string): boolean {
     const result = super.delete(key);
     this.accessTimes.delete(key);
 
@@ -132,7 +160,7 @@ export class EnhancedMemoryCache<T = unknown> extends MemoryCache<T> {
     return result;
   }
 
-  clear(): void {
+  override clear(): void {
     super.clear();
     this.accessTimes.clear();
 
@@ -148,7 +176,15 @@ export class EnhancedMemoryCache<T = unknown> extends MemoryCache<T> {
   // ===== 批量操作 =====
 
   /**
-   * 批量获取
+   * Batch retrieves multiple values from the cache.
+   *
+   * @param keys - Array of cache keys
+   * @returns Map of found key-value pairs
+   *
+   * @example
+   * ```typescript
+   * const results = cache.getMany(['user:1', 'user:2']);
+   * ```
    */
   getMany(keys: string[]): Map<string, T> {
     const results = new Map<string, T>();
@@ -162,7 +198,18 @@ export class EnhancedMemoryCache<T = unknown> extends MemoryCache<T> {
   }
 
   /**
-   * 批量设置
+   * Batch sets multiple values in the cache.
+   *
+   * @param entries - Array of key-value-ttl entries
+   * @returns Number of successfully set entries
+   *
+   * @example
+   * ```typescript
+   * cache.setMany([
+   *   { key: 'user:1', value: { name: 'Alice' } },
+   *   { key: 'user:2', value: { name: 'Bob' }, ttl: 5000 }
+   * ]);
+   * ```
    */
   setMany(entries: Array<{ key: string; value: T; ttl?: number }>): number {
     let successCount = 0;
@@ -178,7 +225,10 @@ export class EnhancedMemoryCache<T = unknown> extends MemoryCache<T> {
   }
 
   /**
-   * 批量删除
+   * Batch deletes multiple keys from the cache.
+   *
+   * @param keys - Array of cache keys to delete
+   * @returns Number of deleted keys
    */
   deleteMany(keys: string[]): number {
     let deleteCount = 0;
@@ -193,7 +243,15 @@ export class EnhancedMemoryCache<T = unknown> extends MemoryCache<T> {
   // ===== 查询操作 =====
 
   /**
-   * 根据条件查找
+   * Finds cache entries matching a predicate.
+   *
+   * @param predicate - Function to test each entry
+   * @returns Array of matching key-value pairs
+   *
+   * @example
+   * ```typescript
+   * const activeUsers = cache.find((user, key) => user.isActive);
+   * ```
    */
   find(predicate: (value: T, key: string) => boolean): Array<[string, T]> {
     const keys = this.keys();
@@ -210,7 +268,9 @@ export class EnhancedMemoryCache<T = unknown> extends MemoryCache<T> {
   }
 
   /**
-   * 获取所有键值对
+   * Gets all cache entries as key-value pairs.
+   *
+   * @returns Array of all key-value pairs
    */
   entries(): Array<[string, T]> {
     const keys = this.keys();
@@ -229,9 +289,11 @@ export class EnhancedMemoryCache<T = unknown> extends MemoryCache<T> {
   // ===== 统计信息 =====
 
   /**
-   * 获取详细统计信息
+   * Gets detailed cache statistics.
+   *
+   * @returns Complete statistics including hits, misses, and memory usage
    */
-  getStats(): CacheStats {
+  override getStats(): CacheStats {
     const baseStats = super.getStats();
     const total = this.hits + this.misses;
     const hitRate = total > 0 ? this.hits / total : 0;
@@ -259,7 +321,7 @@ export class EnhancedMemoryCache<T = unknown> extends MemoryCache<T> {
   }
 
   /**
-   * 重置统计信息
+   * Resets all statistics counters.
    */
   resetStats(): void {
     this.hits = 0;
@@ -269,7 +331,9 @@ export class EnhancedMemoryCache<T = unknown> extends MemoryCache<T> {
   }
 
   /**
-   * 获取命中率（百分比）
+   * Gets the cache hit rate as a percentage.
+   *
+   * @returns Hit rate percentage (0-100)
    */
   getHitRatePercent(): number {
     const total = this.hits + this.misses;

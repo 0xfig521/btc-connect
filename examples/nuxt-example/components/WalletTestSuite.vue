@@ -173,6 +173,143 @@
           >
             ❌ 断开连接测试
           </button>
+          <button
+            @click="testDetection"
+            :disabled="isRunning"
+            class="test-button"
+          >
+            🔍 钱包检测测试
+          </button>
+          <button
+            @click="testHealthCheckFn"
+            :disabled="isRunning"
+            class="test-button"
+          >
+            🏥 健康检查测试
+          </button>
+          <button
+            @click="testAdapterMonitorFn"
+            :disabled="isRunning"
+            class="test-button"
+          >
+            📊 监控统计测试
+          </button>
+        </div>
+      </div>
+
+      <!-- 🔌 Adapter 详情面板 -->
+      <div class="wallet-card mb-8">
+        <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+          🔌 Adapter 详情
+        </h2>
+        
+        <div v-if="!currentAdapter" class="text-center py-8 text-gray-500 dark:text-gray-400">
+          <p>请先连接钱包以查看 Adapter 详情</p>
+        </div>
+        
+        <div v-else class="space-y-6">
+          <!-- 📋 基本信息 -->
+          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <h3 class="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-200">
+              📋 基本信息
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <span class="text-sm text-gray-500 dark:text-gray-400">ID</span>
+                <p class="font-mono text-sm">{{ currentAdapter.id }}</p>
+              </div>
+              <div>
+                <span class="text-sm text-gray-500 dark:text-gray-400">名称</span>
+                <p class="font-semibold">{{ currentAdapter.name }}</p>
+              </div>
+              <div>
+                <span class="text-sm text-gray-500 dark:text-gray-400">就绪状态</span>
+                <p :class="currentAdapter.isReady() ? 'text-green-600' : 'text-red-600'">
+                  {{ currentAdapter.isReady() ? '✅ 已就绪' : '❌ 未就绪' }}
+                </p>
+              </div>
+              <div>
+                <span class="text-sm text-gray-500 dark:text-gray-400">图标</span>
+                <img :src="currentAdapter.icon" :alt="currentAdapter.name" class="w-8 h-8 inline-block" />
+              </div>
+            </div>
+          </div>
+
+          <!-- 📊 状态信息 -->
+          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <h3 class="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-200">
+              📊 状态信息 (getState)
+            </h3>
+            <pre class="bg-gray-900 text-green-400 p-3 rounded text-xs overflow-x-auto">{{ JSON.stringify(adapterState, null, 2) }}</pre>
+          </div>
+
+          <!-- 🔧 方法列表 -->
+          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <h3 class="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-200">
+              🔧 方法列表 ({{ adapterMethods.length }} 个)
+            </h3>
+            <div class="flex flex-wrap gap-2">
+              <span
+                v-for="method in adapterMethods"
+                :key="method"
+                class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs font-mono"
+              >
+                {{ method }}()
+              </span>
+            </div>
+          </div>
+
+          <!-- 🧪 方法测试 -->
+          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <h3 class="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-200">
+              🧪 方法测试
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
+              <button
+                @click="testAdapterMethod('connect')"
+                :disabled="isRunning || !currentAdapter.isReady()"
+                class="test-button text-sm"
+              >
+                🔗 connect
+              </button>
+              <button
+                @click="testAdapterMethod('disconnect')"
+                :disabled="isRunning || !isConnected"
+                class="test-button text-sm"
+              >
+                ❌ disconnect
+              </button>
+              <button
+                @click="testAdapterMethod('getAccounts')"
+                :disabled="isRunning || !isConnected"
+                class="test-button text-sm"
+              >
+                👤 getAccounts
+              </button>
+              <button
+                @click="testAdapterMethod('getNetwork')"
+                :disabled="isRunning || !isConnected"
+                class="test-button text-sm"
+              >
+                🌐 getNetwork
+              </button>
+              <button
+                @click="testAdapterMethod('signMessage')"
+                :disabled="isRunning || !isConnected"
+                class="test-button text-sm"
+              >
+                ✍️ signMessage
+              </button>
+            </div>
+            
+            <!-- 方法调用结果 -->
+            <div v-if="methodResult" class="mt-4">
+              <h4 class="text-sm font-semibold mb-2 text-gray-700 dark:text-gray-300">
+                📤 调用结果
+              </h4>
+              <pre class="bg-gray-900 text-green-400 p-3 rounded text-xs overflow-x-auto max-h-48 overflow-y-auto">{{ methodResult }}</pre>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -263,7 +400,12 @@ import {
   useSignature,
   useTransactions,
   useNetwork,
-  useWalletInfo
+  useWalletInfo,
+  // 新增 Composables
+  useWalletDetection,
+  useWalletEvent,
+  useWalletManager,
+  useWalletManagerAdvanced
 } from '@btc-connect/vue'
 import WalletDebugPanel from './WalletDebugPanel.vue'
 
@@ -280,6 +422,11 @@ const logs = ref<string[]>([])
 const testResults = ref<Record<string, string>>({})
 const isRunning = ref(false)
 
+// Adapter 详情相关状态
+const adapterState = ref<Record<string, any>>({})
+const adapterMethods = ref<string[]>([])
+const methodResult = ref<string>('')
+
 // 钱包状态
 const { status, accounts, currentAccount, network, error, isConnected, isConnecting, address, balance, publicKey } = useWallet()
 const wallet = useWallet()
@@ -292,6 +439,39 @@ const { accounts: accountList } = useAccount()
 const { balance: balanceInfo } = useBalance()
 const { signMessage, signPsbt } = useSignature()
 const { sendBitcoin } = useTransactions()
+
+// ========== 新增 Composables ==========
+
+// 钱包检测
+const {
+  isDetecting,
+  detectedWallets,
+  isComplete: detectionComplete,
+  elapsedTime: detectionElapsedTime,
+  detectionStats,
+  startDetection,
+  stopDetection,
+  restartDetection
+} = useWalletDetection()
+
+// 钱包管理器
+const {
+  currentAdapter,
+  availableAdapters,
+  adapterStates,
+  getAdapter
+} = useWalletManager()
+
+// 高级钱包管理器
+const {
+  healthCheck,
+  adapterMonitor,
+  connectMultiple,
+  disconnectAll
+} = useWalletManagerAdvanced()
+
+// 钱包事件历史
+const eventHistory = ref<Array<{type: string, data: any, timestamp: number}>>([])
 
 // 工具函数
 const addLog = (message: string) => {
@@ -479,6 +659,116 @@ const testDisconnection = async () => {
   }
 }
 
+// ========== 新增测试函数 ==========
+
+// 钱包检测测试
+const testDetection = async () => {
+  addTestResult('钱包检测', '开始检测...')
+  try {
+    await startDetection()
+    addTestResult('钱包检测', `✅ 检测完成: ${detectedWallets.value.length}个钱包`)
+  } catch (error) {
+    addTestResult('钱包检测', `❌ 检测失败: ${error instanceof Error ? error.message : String(error)}`)
+  }
+}
+
+// 健康检查测试
+const testHealthCheckFn = async () => {
+  addTestResult('健康检查', '执行健康检查...')
+  try {
+    const health = await healthCheck()
+    if ('details' in health) {
+      addTestResult('健康检查', `✅ 状态: ${health.status}, 详情: ${health.details.length}个适配器`)
+    } else {
+      addTestResult('健康检查', `✅ 状态: ${health.status}, 消息: ${health.message}`)
+    }
+  } catch (error) {
+    addTestResult('健康检查', `❌ 检查失败: ${error instanceof Error ? error.message : String(error)}`)
+  }
+}
+
+// 监控统计测试
+const testAdapterMonitorFn = () => {
+  const stats = adapterMonitor()
+  addTestResult('监控统计', `✅ 总适配器: ${stats.totalAdapters}, 已连接: ${stats.connectedAdapters}`)
+}
+
+// 清除事件历史
+const clearEventHistory = () => {
+  eventHistory.value = []
+  addLog('📝 事件历史已清除')
+}
+
+// ========== Adapter 详情相关函数 ==========
+
+// 获取 adapter 的公共方法列表
+const getAdapterMethods = (adapter: any): string[] => {
+  if (!adapter) return []
+  
+  const proto = Object.getPrototypeOf(adapter)
+  const allMethods = Object.getOwnPropertyNames(proto)
+  
+  // 过滤出公共方法（排除 constructor 和 _ 开头的方法）
+  return allMethods.filter(method => {
+    return method !== 'constructor' && !method.startsWith('_')
+  })
+}
+
+// 更新 adapter 状态和方法列表
+const updateAdapterInfo = () => {
+  if (currentAdapter.value) {
+    adapterState.value = currentAdapter.value.getState()
+    adapterMethods.value = getAdapterMethods(currentAdapter.value)
+  } else {
+    adapterState.value = {}
+    adapterMethods.value = []
+  }
+}
+
+// 测试 adapter 方法
+const testAdapterMethod = async (methodName: string) => {
+  if (!currentAdapter.value) {
+    methodResult.value = '错误: 未连接钱包'
+    return
+  }
+  
+  methodResult.value = `⏳ 正在调用 ${methodName}()...`
+  addLog(`🧪 测试 Adapter 方法: ${methodName}`)
+  
+  try {
+    let result: any
+    
+    switch (methodName) {
+      case 'connect':
+        result = await currentAdapter.value.connect()
+        break
+      case 'disconnect':
+        await currentAdapter.value.disconnect()
+        result = { success: true, message: '已断开连接' }
+        break
+      case 'getAccounts':
+        result = await currentAdapter.value.getAccounts()
+        break
+      case 'getNetwork':
+        result = await currentAdapter.value.getNetwork()
+        break
+      case 'signMessage':
+        const testMsg = 'BTC Connect Adapter 测试消息 - ' + new Date().toISOString()
+        result = await currentAdapter.value.signMessage(testMsg)
+        break
+      default:
+        result = { error: '未知方法' }
+    }
+    
+    methodResult.value = JSON.stringify(result, null, 2)
+    addLog(`✅ ${methodName}() 成功`)
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    methodResult.value = `❌ 错误: ${errorMsg}`
+    addLog(`❌ ${methodName}() 失败: ${errorMsg}`)
+  }
+}
+
 // 运行所有测试
 const runAllTests = async () => {
   isRunning.value = true
@@ -534,22 +824,37 @@ onMounted(() => {
 
   if (manager.value) {
     manager.value.on('connect', (params: any) => {
-      addLog(`钱包已连接，账户数量: ${params.accounts.length}`)
+      const accountCount = params?.accounts?.length ?? 0
+      addLog(`钱包已连接，账户数量: ${accountCount}`)
+      updateAdapterInfo()
     })
 
     manager.value.on('disconnect', () => {
       addLog('钱包已断开连接')
+      updateAdapterInfo()
     })
 
     manager.value.on('accountChange', (params: any) => {
-      addLog(`账户已变更，新账户数量: ${params.accounts.length}`)
+      const accountCount = params?.accounts?.length ?? 0
+      addLog(`账户已变更，新账户数量: ${accountCount}`)
+      updateAdapterInfo()
     })
 
     manager.value.on('networkChange', (params: any) => {
-      addLog(`网络已切换到: ${params.network}`)
+      const network = params?.network ?? 'unknown'
+      addLog(`网络已切换到: ${network}`)
+      updateAdapterInfo()
     })
   }
+  
+  // 初始化 adapter 信息
+  updateAdapterInfo()
 })
+
+// 监听 currentAdapter 变化
+watch(currentAdapter, () => {
+  updateAdapterInfo()
+}, { immediate: true })
 </script>
 
 <style scoped>

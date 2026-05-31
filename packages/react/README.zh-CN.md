@@ -1,6 +1,6 @@
 # @btc-connect/react
 
-[中文文档](./README.zh-CN.md) | English
+中文文档 | [English](./README.md)
 
 <p align="center">
   <strong>React 适配器 - 提供Hooks和Context的BTC Connect绑定</strong>
@@ -107,6 +107,23 @@ export default App;
 
 ## React Hooks
 
+### Hooks 概览
+
+| Hook | 说明 | 主要返回值 |
+|------|------|-----------|
+| `useWallet()` | 主要 Hook | 所有功能的统一访问点 |
+| `useConnectWallet()` | 连接操作 | `connect`, `disconnect`, `switchWallet` |
+| `useNetwork()` | 网络管理 | `network`, `switchNetwork` |
+| `useWalletModal()` | 弹窗控制 | `isModalOpen`, `openModal`, `closeModal` |
+| `useAccount()` | 账户信息 | `address`, `publicKey`, `accounts` |
+| `useBalance()` | 余额管理 | `balance`, `refreshBalance` |
+| `useSignature()` | 签名操作 | `signMessage`, `signPsbt` |
+| `useTransactions()` | 交易操作 | `sendBitcoin` |
+| `useWalletEvent()` | 事件监听 | 自动管理生命周期 |
+| `useWalletManager()` | 管理器访问 | `currentAdapter`, `availableAdapters` |
+| `useWalletModalEnhanced()` | 增强弹窗 | `openWithSource`, `forceClose` |
+| `useWalletDetection()` | 钱包检测 | `isDetecting`, `detectedWallets`, `stats` |
+
 ### useWallet - 统一Hook
 
 主要hook，提供所有钱包功能的访问。
@@ -114,25 +131,56 @@ export default App;
 **返回值:**
 ```typescript
 interface UseWalletReturn {
-  // 状态
+  // === 基础状态 ===
   status: ConnectionStatus;
   isConnected: boolean;
   isConnecting: boolean;
-  address?: string;
-  balance?: number;
-  network?: Network;
-  error?: Error;
+  address: string | null;
+  balance: BalanceInfo | null;
+  publicKey: string | null;
+  accounts: AccountInfo[];
+  currentAccount: AccountInfo | null;
+  network: Network;
+  error: Error | null;
+  currentWallet: WalletInfo | null;
 
-  // 操作
+  // === 连接操作 ===
   connect: (walletId: string) => Promise<AccountInfo[]>;
   disconnect: () => Promise<void>;
   switchWallet: (walletId: string) => Promise<AccountInfo[]>;
   availableWallets: WalletInfo[];
 
-  // 高级
-  useWalletEvent: <T extends WalletEvent>(event: T, handler: EventHandler<T>) => UseWalletEventReturn<T>;
-  walletModal: UseWalletModalReturn;
+  // === 网络管理 ===
+  switchNetwork: (network: Network) => Promise<void>;
+
+  // === 事件监听 ===
+  useWalletEvent: <T extends WalletEvent>(event: T, handler: EventHandler<T>) => void;
+
+  // === 弹窗控制 ===
+  walletModal: {
+    isModalOpen: boolean;
+    openModal: () => void;
+    closeModal: () => void;
+    toggleModal: () => void;
+  };
+
+  // === 钱包管理器 ===
+  currentAdapter: BTCWalletAdapter | null;
+  allAdapters: BTCWalletAdapter[];
   manager: BTCWalletManager;
+
+  // === 签名功能 ===
+  signMessage: (message: string) => Promise<string>;
+  signPsbt: (psbt: string) => Promise<string>;
+
+  // === 交易功能 ===
+  sendBitcoin: (to: string, amount: number) => Promise<string>;
+
+  // === 工具函数 ===
+  utils: {
+    formatAddress: (address: string, options?: FormatOptions) => Promise<string>;
+    formatBalance: (satoshis: number, options?: FormatOptions) => Promise<string>;
+  };
 }
 ```
 
@@ -164,7 +212,6 @@ interface UseWalletEventReturn<T> {
 interface UseNetworkReturn {
   network: Network;
   switchNetwork: (network: Network) => Promise<void>;
-  isSwitching: boolean;
 }
 ```
 
@@ -180,6 +227,222 @@ interface UseThemeReturn {
   effectiveTheme: ThemeMode;
   setTheme: (theme: ThemeMode) => void;
   resetTheme: () => void;
+}
+```
+
+### useWalletDetection
+
+基于事件的实时钱包检测 Hook。提供全面的钱包检测状态管理和事件监听。
+
+**返回值:**
+```typescript
+interface UseWalletDetectionReturn {
+  // === 状态 ===
+  isDetecting: boolean;                    // 是否正在检测
+  detectedWallets: DetectedWallet[];       // 已检测到的钱包列表
+  detectionComplete: boolean;              // 检测是否完成
+  lastDetectionTime: number | null;        // 上次检测时间戳
+  stats: WalletDetectionStats;             // 检测统计信息
+
+  // === 方法 ===
+  detectWallets: () => Promise<DetectedWallet[]>;  // 手动触发检测
+  resetDetectionState: () => void;                 // 重置检测状态
+  getWalletInfo: (walletId: string) => DetectedWallet | null;
+  isWalletAvailable: (walletId: string) => boolean;
+  getAvailableWallets: () => string[];
+
+  // === 事件监听器 ===
+  onWalletDetected: (callback: (result: DetectedWallet) => void) => void;
+  onDetectionComplete: (callback: (results: DetectedWallet[]) => void) => void;
+  onAvailableWallets: (callback: (wallets: string[]) => void) => void;
+  removeAllListeners: () => void;
+}
+
+interface DetectedWallet {
+  walletId: string;
+  name: string;
+  isAvailable: boolean;
+}
+
+interface WalletDetectionStats {
+  totalScans: number;           // 执行的总扫描次数
+  successfulDetections: number; // 成功检测次数
+  lastScanDuration: number;     // 上次扫描耗时（毫秒）
+  averageScanDuration: number;  // 平均扫描耗时（毫秒）
+  detectedWalletCount: number;  // 检测到的钱包数量
+}
+```
+
+**示例:**
+```tsx
+import { useWalletDetection } from '@btc-connect/react';
+
+function WalletDetectionExample() {
+  const {
+    isDetecting,
+    detectedWallets,
+    detectionComplete,
+    stats,
+    detectWallets,
+    onWalletDetected,
+    onDetectionComplete
+  } = useWalletDetection();
+
+  // 监听钱包检测事件
+  onWalletDetected((wallet) => {
+    console.log('检测到钱包:', wallet.name);
+  });
+
+  onDetectionComplete((wallets) => {
+    console.log('检测完成:', wallets.length, '个钱包');
+  });
+
+  return (
+    <div>
+      <h3>钱包检测</h3>
+      <p>状态: {isDetecting ? '检测中...' : '空闲'}</p>
+      <p>完成: {detectionComplete ? '是' : '否'}</p>
+      <p>总扫描次数: {stats.totalScans}</p>
+      <p>平均耗时: {stats.averageScanDuration}ms</p>
+
+      <button onClick={detectWallets} disabled={isDetecting}>
+        {isDetecting ? '检测中...' : '检测钱包'}
+      </button>
+
+      <ul>
+        {detectedWallets.map((wallet) => (
+          <li key={wallet.walletId}>
+            {wallet.name} - {wallet.isAvailable ? '可用' : '不可用'}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+### useWalletManager
+
+访问和管理钱包适配器的 Hook。提供对底层钱包管理器的直接访问，用于高级用例。
+
+**返回值:**
+```typescript
+interface UseWalletManagerReturn {
+  currentAdapter: BTCWalletAdapter | null;     // 当前活动的适配器
+  availableAdapters: BTCWalletAdapter[];       // 所有可用适配器
+  adapterStates: Record<string, WalletState>;  // 每个适配器的状态
+  getAdapter: (walletId: string) => BTCWalletAdapter | null;
+  addAdapter: (adapter: BTCWalletAdapter) => void;
+  removeAdapter: (walletId: string) => void;
+  manager: BTCWalletManager;                   // 直接访问管理器
+}
+```
+
+**示例:**
+```tsx
+import { useWalletManager } from '@btc-connect/react';
+
+function WalletManagerExample() {
+  const {
+    currentAdapter,
+    availableAdapters,
+    adapterStates,
+    getAdapter,
+    manager
+  } = useWalletManager();
+
+  // 获取特定适配器
+  const unisatAdapter = getAdapter('unisat');
+
+  // 检查适配器状态
+  const adapterState = adapterStates['unisat'];
+
+  return (
+    <div>
+      <p>当前适配器: {currentAdapter?.name || '无'}</p>
+      <p>可用适配器: {availableAdapters.length}</p>
+      {availableAdapters.map((adapter) => (
+        <div key={adapter.id}>
+          <span>{adapter.name}</span>
+          <span>状态: {adapterStates[adapter.id]?.status}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### useWalletModalEnhanced
+
+增强的钱包弹窗管理 Hook，支持来源追踪、配置管理和高级操作。
+
+**返回值:**
+```typescript
+interface UseWalletModalEnhancedReturn {
+  // === 状态 ===
+  isOpen: boolean;
+  openSource: string | null;     // 弹窗打开的来源
+  openCount: number;             // 弹窗打开次数
+  config: ModalConfig;           // 当前弹窗配置
+  modalState: ModalState;        // 完整弹窗状态
+
+  // === 方法 ===
+  open: () => void;
+  close: () => void;
+  toggle: () => void;
+  openWithSource: (source: string) => void;  // 带来源追踪的打开
+  forceClose: () => void;                     // 强制关闭（忽略配置）
+  setConfig: (config: Partial<ModalConfig>) => void;
+}
+
+interface ModalConfig {
+  closeOnEscape?: boolean;        // ESC键关闭（默认: true）
+  closeOnOutsideClick?: boolean;  // 点击外部关闭（默认: true）
+  showCloseButton?: boolean;      // 显示关闭按钮（默认: true）
+  preventBodyScroll?: boolean;    // 禁止页面滚动（默认: true）
+  animationDuration?: number;     // 动画时长（毫秒，默认: 300）
+}
+```
+
+**示例:**
+```tsx
+import { useWalletModalEnhanced } from '@btc-connect/react';
+
+function ModalExample() {
+  const {
+    isOpen,
+    open,
+    close,
+    openWithSource,
+    forceClose,
+    openSource,
+    openCount,
+    config,
+    setConfig
+  } = useWalletModalEnhanced();
+
+  return (
+    <div>
+      <p>弹窗状态: {isOpen ? '打开' : '关闭'}</p>
+      <p>打开来源: {openSource || '未知'}</p>
+      <p>打开次数: {openCount}</p>
+
+      <button onClick={() => openWithSource('header-button')}>
+        从头部打开
+      </button>
+
+      <button onClick={open}>打开（默认）</button>
+      <button onClick={close}>关闭</button>
+      <button onClick={forceClose}>强制关闭</button>
+
+      <button onClick={() => setConfig({
+        closeOnEscape: false,
+        animationDuration: 500
+      })}>
+        更新配置
+      </button>
+    </div>
+  );
 }
 ```
 

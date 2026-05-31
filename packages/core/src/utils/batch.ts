@@ -1,8 +1,32 @@
 /**
- * 批处理请求系统
+ * Batch request processing system.
+ * Provides intelligent request batching to combine multiple requests into single batches,
+ * reducing network overhead and improving performance.
  *
- * 提供智能的请求批处理功能，将多个请求合并为单个批次处理，
- * 减少网络开销，提高性能。
+ * @example
+ * ```typescript
+ * import { BatchScheduler, createBatchScheduler } from '@btc-connect/core';
+ *
+ * // Define batch processor
+ * const processor = async (requests) => {
+ *   const results = new Map<string, Result>();
+ *   for (const req of requests) {
+ *     const result = await processItem(req.data);
+ *     results.set(req.id, result);
+ *   }
+ *   return results;
+ * };
+ *
+ * // Create scheduler
+ * const scheduler = new BatchScheduler(processor, {
+ *   maxBatchSize: 100,
+ *   maxWaitTimeMS: 50
+ * });
+ *
+ * // Submit requests
+ * const result1 = await scheduler.submit({ address: 'tb1q...' });
+ * const result2 = await scheduler.submit({ address: 'tb1q...' });
+ * ```
  */
 
 // ===== 类型定义 =====
@@ -53,6 +77,13 @@ export type BatchEventHandler = (event: BatchEvent) => void;
 
 // ===== 批调度器 =====
 
+/**
+ * Batch scheduler for processing requests in batches.
+ * Supports priority-based processing, configurable batch sizes, and event tracking.
+ *
+ * @template T - Request data type
+ * @template R - Result data type
+ */
 export class BatchScheduler<T = unknown, R = unknown> {
   private queue: BatchRequest<T, R>[] = [];
   private processing = false;
@@ -81,7 +112,16 @@ export class BatchScheduler<T = unknown, R = unknown> {
   }
 
   /**
-   * 提交请求到批处理队列
+   * Submits a request to the batch queue.
+   *
+   * @param data - The request data
+   * @param priority - Request priority (higher = more urgent)
+   * @returns Promise resolving to the result
+   *
+   * @example
+   * ```typescript
+   * const result = await scheduler.submit({ address: 'tb1q...' }, 5);
+   * ```
    */
   submit(data: T, priority = 0): Promise<R> {
     return new Promise((resolve, reject) => {
@@ -107,7 +147,9 @@ export class BatchScheduler<T = unknown, R = unknown> {
   }
 
   /**
-   * 立即处理当前队列
+   * Immediately processes the current queue.
+   *
+   * @returns Promise that resolves when processing completes
    */
   flush(): Promise<void> {
     if (this.timer) {
@@ -118,7 +160,7 @@ export class BatchScheduler<T = unknown, R = unknown> {
   }
 
   /**
-   * 清空队列
+   * Clears the queue and rejects all pending requests.
    */
   clear(): void {
     if (this.timer) {
@@ -136,7 +178,9 @@ export class BatchScheduler<T = unknown, R = unknown> {
   }
 
   /**
-   * 获取当前队列大小
+   * Gets the current queue size.
+   *
+   * @returns Number of pending requests
    */
   getQueueSize(): number {
     return this.queue.length;

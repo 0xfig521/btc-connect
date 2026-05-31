@@ -16,8 +16,33 @@ interface WalletDetectionStats {
 }
 
 /**
- * 钱包检测 Hook - 基于事件的实时钱包检测
- * 提供钱包检测状态管理和事件监听
+ * Hook for real-time wallet detection with event-based updates.
+ * Provides comprehensive wallet detection status management and event listening.
+ *
+ * @returns Object with detection state and methods
+ * @returns {boolean} isDetecting - Whether detection is in progress
+ * @returns {DetectedWallet[]} detectedWallets - List of detected wallets
+ * @returns {boolean} detectionComplete - Whether detection is complete
+ * @returns {WalletDetectionStats} stats - Detection statistics
+ * @returns {Function} detectWallets - Manually trigger detection
+ * @returns {Function} onWalletDetected - Register wallet detected callback
+ * @returns {Function} onDetectionComplete - Register detection complete callback
+ *
+ * @example
+ * ```tsx
+ * import { useWalletDetection } from '@btc-connect/react';
+ *
+ * function DetectionStatus() {
+ *   const { isDetecting, detectedWallets, stats } = useWalletDetection();
+ *
+ *   return (
+ *     <div>
+ *       <p>Status: {isDetecting ? 'Detecting...' : 'Complete'}</p>
+ *       <p>Found: {detectedWallets.length} wallets</p>
+ *     </div>
+ *   );
+ * }
+ * ```
  */
 export function useWalletDetection() {
   const ctx = useWalletContext();

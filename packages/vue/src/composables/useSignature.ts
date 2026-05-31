@@ -2,7 +2,42 @@ import { ref } from 'vue';
 import { useWalletContext } from '../walletContext';
 
 /**
- * 使用签名功能的Composable
+ * Signature operations Composable
+ *
+ * Provides message and PSBT signing functionality for Bitcoin wallets.
+ *
+ * @returns Signature methods and state
+ * @returns {(message: string) => Promise<string>} returns.signMessage - Sign a message
+ * @returns {(psbt: string) => Promise<string>} returns.signPsbt - Sign a PSBT
+ * @returns {Ref<boolean>} returns.isSigning - Whether a signing operation is in progress
+ *
+ * @example
+ * ```vue
+ * <script setup>
+ * import { useSignature } from '@btc-connect/vue';
+ *
+ * const { signMessage, signPsbt, isSigning } = useSignature();
+ *
+ * const handleSignMessage = async () => {
+ *   try {
+ *     const signature = await signMessage('Hello Bitcoin!');
+ *     console.log('Signature:', signature);
+ *   } catch (error) {
+ *     console.error('Signing failed:', error);
+ *   }
+ * };
+ * </script>
+ *
+ * <template>
+ *   <button @click="handleSignMessage" :disabled="isSigning">
+ *     {{ isSigning ? 'Signing...' : 'Sign Message' }}
+ *   </button>
+ * </template>
+ * ```
+ */
+
+/**
+ * Use signature functionality Composable
  */
 export function useSignature() {
   const { manager } = useWalletContext();

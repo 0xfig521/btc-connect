@@ -1,7 +1,54 @@
 /**
- * 钱包检测功能的 Composable
+ * Wallet detection Composable
  *
- * 基于事件驱动的钱包检测系统，提供实时检测状态和手动控制功能
+ * Event-driven wallet detection system providing real-time detection status
+ * and manual control functionality.
+ *
+ * @returns Detection state and methods
+ * @returns {ComputedRef<boolean>} returns.isDetecting - Whether detection is in progress
+ * @returns {ComputedRef<WalletInfo[]>} returns.availableWallets - Available wallets list
+ * @returns {ComputedRef<string[]>} returns.detectedWallets - IDs of detected wallets
+ * @returns {ComputedRef<boolean>} returns.isComplete - Whether detection is complete
+ * @returns {ComputedRef<number>} returns.elapsedTime - Detection elapsed time in ms
+ * @returns {ComputedRef<number | null>} returns.lastDetectionTime - Last detection timestamp
+ * @returns {ComputedRef} returns.detectionStats - Detection statistics
+ * @returns {(walletId: string) => boolean} returns.isWalletDetected - Check if a wallet is detected
+ * @returns {(walletId: string) => number | null} returns.getWalletDetectionTime - Get wallet detection time
+ * @returns {() => Promise<void>} returns.startDetection - Start wallet detection
+ * @returns {() => void} returns.stopDetection - Stop wallet detection
+ * @returns {() => Promise<void>} returns.restartDetection - Restart wallet detection
+ *
+ * @example
+ * ```vue
+ * <script setup>
+ * import { useWalletDetection } from '@btc-connect/vue';
+ *
+ * const {
+ *   isDetecting,
+ *   detectedWallets,
+ *   isComplete,
+ *   detectionStats,
+ *   startDetection,
+ *   stopDetection
+ * } = useWalletDetection();
+ *
+ * // Check detection progress
+ * watch(isComplete, (complete) => {
+ *   if (complete) {
+ *     console.log('Detection complete:', detectedWallets.value);
+ *   }
+ * });
+ * </script>
+ *
+ * <template>
+ *   <div>
+ *     <p v-if="isDetecting">Detecting wallets...</p>
+ *     <p v-else>Detected: {{ detectionStats.detectedWallets }}/{{ detectionStats.totalWallets }}</p>
+ *     <button @click="startDetection" :disabled="isDetecting">Start Detection</button>
+ *     <button @click="stopDetection" :disabled="!isDetecting">Stop Detection</button>
+ *   </div>
+ * </template>
+ * ```
  */
 
 import type { ComputedRef, Ref } from 'vue';
@@ -10,7 +57,7 @@ import type { WalletInfo } from '../types';
 import { useWalletContext } from '../walletContext';
 
 /**
- * 钱包检测状态
+ * Wallet detection state interface
  */
 export interface WalletDetectionState {
   isDetecting: boolean;
@@ -22,7 +69,7 @@ export interface WalletDetectionState {
 }
 
 /**
- * 使用钱包检测功能的 Composable
+ * Use wallet detection functionality Composable
  */
 export function useWalletDetection() {
   const ctx = useWalletContext();

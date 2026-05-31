@@ -255,6 +255,32 @@ export interface ConnectButtonProps {
   style?: React.CSSProperties;
 }
 
+/**
+ * Pre-built button component for wallet connection.
+ * Displays connect button when disconnected, or balance/address when connected.
+ *
+ * @param props - Button props
+ * @param props.size - Button size: 'sm' | 'md' | 'lg' (default: 'md')
+ * @param props.variant - Display style: 'select' | 'button' | 'compact' (default: 'select')
+ * @param props.label - Custom button label (default: 'Connect')
+ * @param props.disabled - Disable button (default: false)
+ * @param props.className - Custom CSS class
+ * @param props.style - Custom inline styles
+ *
+ * @example
+ * ```tsx
+ * import { ConnectButton } from '@btc-connect/react';
+ *
+ * function App() {
+ *   return (
+ *     <ConnectButton
+ *       size="md"
+ *       label="Connect Wallet"
+ *     />
+ *   );
+ * }
+ * ```
+ */
 export const ConnectButton: React.FC<ConnectButtonProps> = ({
   size = 'md',
   variant: _variant = 'select',
@@ -264,7 +290,7 @@ export const ConnectButton: React.FC<ConnectButtonProps> = ({
   style,
 }) => {
   const { currentAccount, balance, isConnected, disconnect } = useWallet();
-  const { openModal } = useWalletModal();
+  const { open } = useWalletModal();
 
   // 使用 TailwindCSS 兼容的主题检测
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>(() =>
@@ -364,8 +390,8 @@ export const ConnectButton: React.FC<ConnectButtonProps> = ({
 
   const handleConnect = useCallback(() => {
     if (disabled) return;
-    openModal();
-  }, [disabled, openModal]);
+    open();
+  }, [disabled, open]);
 
   const handleDisconnect = useCallback(() => {
     setShowDropdown(false);

@@ -66,6 +66,46 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * AddressDisplay Component
+ *
+ * Displays a shortened Bitcoin address with copy-to-clipboard functionality.
+ * Shows a checkmark icon when address is successfully copied.
+ *
+ * @component
+ *
+ * @props {AddressDisplayProps} props - Component props
+ * @props {string} props.address - Full Bitcoin address
+ * @props {number} props.maxLength - Characters to show at end (default: 4)
+ * @props {boolean} props.copyable - Enable copy functionality (default: true)
+ * @props {'light' | 'dark'} props.theme - Theme mode (default: 'light')
+ * @props {boolean} props.disabled - Disable copy button (default: false)
+ *
+ * @emits copy - Emitted when address is copied successfully
+ * @emits error - Emitted when copy fails
+ *
+ * @example
+ * ```vue
+ * <template>
+ *   <AddressDisplay
+ *     :address="walletAddress"
+ *     :max-length="4"
+ *     copyable
+ *     @copy="handleCopy"
+ *   />
+ * </template>
+ *
+ * <script setup>
+ * import { AddressDisplay } from '@btc-connect/vue';
+ *
+ * const walletAddress = 'bc1qxy2kgdygjrsqtzq6n0yqrwd6hhn2p7s5h2r5m';
+ *
+ * const handleCopy = (address) => {
+ *   console.log('Copied:', address);
+ * };
+ * </script>
+ * ```
+ */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import type { AddressDisplayProps } from '../types';
 import { formatAddressShort } from '../utils';

@@ -1,5 +1,6 @@
 /**
- * 缓存系统入口
+ * Cache system entry point.
+ * Exports all cache-related classes, interfaces, and utility functions.
  */
 
 export {
@@ -31,12 +32,37 @@ export {
 
 import { CacheManager, type CacheOptions, MemoryCache } from './memory-cache';
 
-// 便捷的缓存实例创建函数
+/**
+ * Creates a new MemoryCache instance with the specified options.
+ *
+ * @template T - The type of cached values
+ * @param options - Cache configuration options
+ * @returns A new MemoryCache instance
+ *
+ * @example
+ * ```typescript
+ * import { createCache } from '@btc-connect/core';
+ *
+ * const cache = createCache<string>({ ttl: 30000 });
+ * ```
+ */
 export function createCache<T>(options?: CacheOptions): MemoryCache<T> {
   return new MemoryCache<T>(options);
 }
 
-// 获取全局缓存管理器
+/**
+ * Gets the global CacheManager singleton instance.
+ *
+ * @returns The CacheManager singleton
+ *
+ * @example
+ * ```typescript
+ * import { getCacheManager } from '@btc-connect/core';
+ *
+ * const manager = getCacheManager();
+ * const balanceCache = manager.getCache('balance');
+ * ```
+ */
 export function getCacheManager(): CacheManager {
   return CacheManager.getInstance();
 }

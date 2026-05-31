@@ -243,7 +243,24 @@ export function useWallet() {
 }
 
 /**
- * 使用连接功能的Hook - 优化版本
+ * Hook for wallet connection operations.
+ * Provides methods for connecting, disconnecting, and switching wallets.
+ *
+ * @returns Object with connection methods and available wallets
+ * @returns {Function} connect - Connect to a wallet by ID
+ * @returns {Function} disconnect - Disconnect current wallet
+ * @returns {Function} switchWallet - Switch to a different wallet
+ * @returns {WalletInfo[]} availableWallets - List of available wallets
+ *
+ * @example
+ * ```tsx
+ * import { useConnectWallet } from '@btc-connect/react';
+ *
+ * function ConnectButton() {
+ *   const { connect, disconnect, availableWallets } = useConnectWallet();
+ *   return <button onClick={() => connect('unisat')}>Connect</button>;
+ * }
+ * ```
  */
 export function useConnectWallet() {
   const { connect, disconnect, switchWallet, availableWallets } =
@@ -258,7 +275,23 @@ export function useConnectWallet() {
 }
 
 /**
- * 使用事件监听的Hook - 优化版本
+ * Hook for listening to wallet events with automatic cleanup.
+ * Automatically manages event listener lifecycle - removes listener on unmount.
+ *
+ * @param event - The wallet event type to listen for
+ * @param handler - Callback function to handle the event
+ *
+ * @example
+ * ```tsx
+ * import { useWalletEvent } from '@btc-connect/react';
+ *
+ * function MyComponent() {
+ *   useWalletEvent('connect', (accounts) => {
+ *     console.log('Wallet connected:', accounts);
+ *   });
+ *   return <div>Listening...</div>;
+ * }
+ * ```
  */
 export function useWalletEvent(
   event: WalletEvent,
@@ -277,7 +310,38 @@ export function useWalletEvent(
 }
 
 /**
- * 使用网络信息的Hook - 优化版本
+ * Hook for network management and switching.
+ *
+ * Provides current network state and method to switch networks.
+ *
+ * @returns An object containing network state and switching method
+ * @returns {Network} returns.network - Current network (e.g., 'mainnet', 'testnet')
+ * @returns {Function} returns.switchNetwork - Switch to a different network
+ *
+ * @example
+ * ```tsx
+ * import { useNetwork } from '@btc-connect/react';
+ *
+ * function NetworkSwitcher() {
+ *   const { network, switchNetwork } = useNetwork();
+ *
+ *   const handleSwitch = async () => {
+ *     try {
+ *       await switchNetwork('testnet');
+ *       console.log('Switched to testnet');
+ *     } catch (error) {
+ *       console.error('Failed to switch network:', error);
+ *     }
+ *   };
+ *
+ *   return (
+ *     <div>
+ *       <p>Current Network: {network}</p>
+ *       <button onClick={handleSwitch}>Switch to Testnet</button>
+ *     </div>
+ *   );
+ * }
+ * ```
  */
 export function useNetwork() {
   const { state, manager } = useWalletContext();
@@ -349,23 +413,26 @@ export function useNetwork() {
   };
 }
 
-/**
- * 使用钱包模态框的Hook - 优化版本
- */
-export function useWalletModal() {
-  const { isModalOpen, openModal, closeModal, toggleModal } =
-    useWalletContext();
-
-  return {
-    isModalOpen,
-    openModal,
-    closeModal,
-    toggleModal,
-  };
-}
 
 /**
- * 使用账户信息的Hook - 新增
+ * Hook for accessing account information.
+ * Provides access to connected wallet accounts and current account details.
+ *
+ * @returns Object with account information
+ * @returns {AccountInfo[]} accounts - List of all connected accounts
+ * @returns {AccountInfo|null} currentAccount - Currently selected account
+ * @returns {boolean} hasAccounts - Whether any accounts are connected
+ *
+ * @example
+ * ```tsx
+ * import { useAccount } from '@btc-connect/react';
+ *
+ * function AccountInfo() {
+ *   const { accounts, currentAccount, hasAccounts } = useAccount();
+ *   if (!hasAccounts) return <p>No accounts</p>;
+ *   return <p>Address: {currentAccount?.address}</p>;
+ * }
+ * ```
  */
 export function useAccount() {
   const { state } = useWalletContext();
@@ -378,7 +445,24 @@ export function useAccount() {
 }
 
 /**
- * 使用余额信息的Hook - 新增
+ * Hook for accessing balance information.
+ * Provides balance details including confirmed, unconfirmed, and total balance.
+ *
+ * @returns Object with balance information
+ * @returns {BalanceDetail|null} balance - Full balance details
+ * @returns {number} confirmedBalance - Confirmed balance in satoshis
+ * @returns {number} unconfirmedBalance - Unconfirmed balance in satoshis
+ * @returns {number} totalBalance - Total balance in satoshis
+ *
+ * @example
+ * ```tsx
+ * import { useBalance } from '@btc-connect/react';
+ *
+ * function BalanceDisplay() {
+ *   const { totalBalance, confirmedBalance } = useBalance();
+ *   return <p>Balance: {totalBalance} sats</p>;
+ * }
+ * ```
  */
 export function useBalance() {
   const { state } = useWalletContext();
@@ -394,67 +478,29 @@ export function useBalance() {
 }
 
 /**
- * 使用地址信息的Hook - 新增
- */
-export function useAddress() {
-  const { state } = useWalletContext();
-
-  return {
-    address: state.currentAccount?.address || null,
-    shortAddress: state.currentAccount?.address
-      ? formatAddressShort(state.currentAccount.address, 4)
-      : null,
-  };
-}
-
-/**
- * 使用公钥信息的Hook - 新增
- */
-export function usePublicKey() {
-  const { state } = useWalletContext();
-
-  return {
-    publicKey: state.currentAccount?.publicKey || null,
-    hasPublicKey: !!state.currentAccount?.publicKey,
-  };
-}
-
-/**
- * 使用连接状态的Hook - 新增
- */
-export function useConnectionStatus() {
-  const { state, manager } = useWalletContext();
-
-  const status = state.status;
-  const isConnected = status === 'connected';
-  const isConnecting = status === 'connecting';
-  const isDisconnected = status === 'disconnected';
-  const hasError = !!state.error;
-
-  const retryConnection = useCallback(async () => {
-    const currentWallet = manager?.getCurrentWallet();
-    if (currentWallet && isDisconnected) {
-      try {
-        await manager?.connect(currentWallet.id);
-      } catch (error) {
-        console.error('Failed to retry connection:', error);
-      }
-    }
-  }, [manager, isDisconnected]);
-
-  return {
-    status,
-    isConnected,
-    isConnecting,
-    isDisconnected,
-    hasError,
-    error: state.error,
-    retryConnection,
-  };
-}
-
-/**
- * 使用钱包信息的Hook - 新增
+ * Hook for accessing wallet information.
+ * Provides information about the current wallet and available wallets.
+ *
+ * @returns Object with wallet information
+ * @returns {WalletInfo|null} currentWallet - Currently connected wallet
+ * @returns {WalletInfo[]} availableWallets - List of available wallets
+ * @returns {boolean} hasWallets - Whether any wallets are available
+ *
+ * @example
+ * ```tsx
+ * import { useWalletInfo } from '@btc-connect/react';
+ *
+ * function WalletList() {
+ *   const { currentWallet, availableWallets } = useWalletInfo();
+ *   return (
+ *     <ul>
+ *       {availableWallets.map((w) => (
+ *         <li key={w.id}>{w.name}</li>
+ *       ))}
+ *     </ul>
+ *   );
+ * }
+ * ```
  */
 export function useWalletInfo() {
   const { currentWallet, availableWallets } = useWalletContext();
@@ -467,7 +513,28 @@ export function useWalletInfo() {
 }
 
 /**
- * 使用账户信息刷新的Hook - 新增
+ * Hook for refreshing account information.
+ *
+ * @deprecated This functionality is now integrated into useWallet.
+ * Provides a method to manually refresh account information.
+ *
+ * @returns An object containing the refresh method
+ * @returns {Function} returns.refreshAccountInfo - Refresh account details
+ *
+ * @example
+ * ```tsx
+ * import { useRefreshAccountInfo } from '@btc-connect/react';
+ *
+ * function RefreshButton() {
+ *   const { refreshAccountInfo } = useRefreshAccountInfo();
+ *
+ *   return (
+ *     <button onClick={refreshAccountInfo}>
+ *       Refresh Account Info
+ *     </button>
+ *   );
+ * }
+ * ```
  */
 export function useRefreshAccountInfo() {
   const { refreshAccountInfo } = useWalletContext();

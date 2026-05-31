@@ -37,7 +37,7 @@
       <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded">
         <span class="text-sm font-medium text-gray-700 dark:text-gray-300">账户地址:</span>
         <span class="text-sm font-mono text-gray-600 dark:text-gray-400">
-          {{ formatAddress(address) }}
+          {{ formatAddress(address ?? undefined) }}
         </span>
       </div>
 
