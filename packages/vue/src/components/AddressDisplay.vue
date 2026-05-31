@@ -86,16 +86,16 @@
  *
  * @example
  * ```vue
- * <template>
+ * &lt;template&gt;
  *   <AddressDisplay
  *     :address="walletAddress"
  *     :max-length="4"
  *     copyable
  *     @copy="handleCopy"
  *   />
- * </template>
+ * &lt;/template&gt;
  *
- * <script setup>
+ * &lt;script setup&gt;
  * import { AddressDisplay } from '@btc-connect/vue';
  *
  * const walletAddress = 'bc1qxy2kgdygjrsqtzq6n0yqrwd6hhn2p7s5h2r5m';
@@ -103,7 +103,7 @@
  * const handleCopy = (address) => {
  *   console.log('Copied:', address);
  * };
- * </script>
+ * &lt;/script&gt;
  * ```
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';

@@ -94,16 +94,16 @@
  *
  * @example
  * ```vue
- * <template>
+ * &lt;template&gt;
  *   <BalanceDisplay
  *     :balance="walletBalance"
  *     :precision="8"
  *     show-unit
  *     @refresh="handleRefresh"
  *   />
- * </template>
+ * &lt;/template&gt;
  *
- * <script setup>
+ * &lt;script setup&gt;
  * import { BalanceDisplay } from '@btc-connect/vue';
  *
  * const walletBalance = {
@@ -115,7 +115,7 @@
  * const handleRefresh = () => {
  *   console.log('Refresh balance');
  * };
- * </script>
+ * &lt;/script&gt;
  * ```
  */
 import { computed, onMounted } from 'vue';

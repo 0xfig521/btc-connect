@@ -155,22 +155,22 @@
  *
  * @example
  * ```vue
- * <template>
+ * &lt;template&gt;
  *   <WalletStatus
  *     theme="dark"
  *     show-balance
  *     show-address
  *     @disconnect="handleDisconnect"
  *   />
- * </template>
+ * &lt;/template&gt;
  *
- * <script setup>
+ * &lt;script setup&gt;
  * import { WalletStatus } from '@btc-connect/vue';
  *
  * const handleDisconnect = () => {
  *   console.log('Wallet disconnected');
  * };
- * </script>
+ * &lt;/script&gt;
  * ```
  */
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';

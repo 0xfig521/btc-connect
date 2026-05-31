@@ -128,7 +128,7 @@
  *
  * @example
  * ```vue
- * <template>
+ * &lt;template&gt;
  *   <ConnectButton
  *     label="Connect Wallet"
  *     theme="dark"
@@ -136,9 +136,9 @@
  *     @connect="handleConnect"
  *     @disconnect="handleDisconnect"
  *   />
- * </template>
+ * &lt;/template&gt;
  *
- * <script setup>
+ * &lt;script setup&gt;
  * import { ConnectButton } from '@btc-connect/vue';
  *
  * const handleConnect = (walletId) => {
@@ -148,7 +148,7 @@
  * const handleDisconnect = () => {
  *   console.log('Disconnected');
  * };
- * </script>
+ * &lt;/script&gt;
  * ```
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue';
